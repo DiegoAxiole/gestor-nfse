@@ -1,8 +1,0 @@
-{
-  "name": "Painel NFSe - dFe & DANFSe",
-  "description": "Painel administrativo premium para consulta de distribuição de NFse (DFe) e geração de DANFSe integrada com o Unimake SEFAZ.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}

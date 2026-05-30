@@ -15,3 +15,13 @@ Thumbs.db
 # State/store databases (runtime)
 data/state_store.db/
 data/stream_store/
+
+# Installer junk
+backend/dll/Unimake.UniDANFe/unins000.*
+backend/dll/Unimake.UniDANFe/Unimake_EXE/
+backend/dll/Unimake.UniDANFe/Register_UnimakeUniDANFe.bat
+backend/dll/Unimake.UniDANFe/*.pdb
+
+# Auto-generated metadata
+frontend/metadata.json
+frontend/docs/
