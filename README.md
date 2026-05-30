@@ -18,7 +18,7 @@ cd gestor_nfse/backend
 uv sync
 cp config.toml.example config.toml
 # Edite config.toml com seus dados (CNPJ, certificado, ambiente)
-uv run uvicorn main:app --host 0.0.0.0 --port 8001
+uv run uvicorn main:app --host 127.0.0.1 --port 8001
 
 # 2. Frontend (outro terminal)
 cd gestor_nfse/frontend
