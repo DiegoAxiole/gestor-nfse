@@ -33,16 +33,22 @@ function Download-Progress {
   } catch {}
   $totalMB = if ($total -gt 0) { [Math]::Round($total / 1MB, 1) } else { "?" }
   Write-Host "  Baixando $Label ($totalMB MB)..." -ForegroundColor Yellow
-  $wc = New-Object System.Net.WebClient
-  Register-ObjectEvent $wc DownloadProgressChanged -Action {
-    $pct = $EventArgs.ProgressPercentage
-    $rec = [Math]::Round($EventArgs.BytesReceived / 1MB, 1)
-    $tot = if ($EventArgs.TotalBytesToReceive -gt 0) { [Math]::Round($EventArgs.TotalBytesToReceive / 1MB, 1) } else { "?" }
-    Write-Progress -Activity "Download: $Label" -Status "$pct% - $rec de $tot MB" -PercentComplete $pct
-  } | Out-Null
-  $wc.DownloadFileAsync($Url, $Dest)
-  while ($wc.IsBusy) { Start-Sleep -Milliseconds 200 }
-  $wc.Dispose()
+  if (Test-Path $Dest) { Remove-Item $Dest -Force }
+  $job = Start-Job { param($u,$d) $w=[System.Net.WebClient]::new(); $w.DownloadFile($u,$d); $w.Dispose() } -Arg $Url,$Dest
+  while ($job.State -eq 'Running') {
+    if (Test-Path $Dest) {
+      $cur = (Get-Item $Dest).Length
+      if ($total -gt 0) {
+        $pct = [Math]::Min(99, [Math]::Round(($cur/$total)*100))
+        $rec = [Math]::Round($cur/1MB,1)
+        $totM = [Math]::Round($total/1MB,1)
+        Write-Progress -Activity "Download: $Label" -Status "$pct% ($rec/$totM MB)" -PercentComplete $pct
+      }
+    }
+    Start-Sleep -Milliseconds 300
+  }
+  Receive-Job $job -ErrorAction SilentlyContinue | Out-Null
+  Remove-Job $job
   Write-Progress -Activity "Download: $Label" -Completed
   $arq = Get-Item $Dest
   Write-Host "  OK $([Math]::Round($arq.Length / 1MB, 1)) MB baixado" -ForegroundColor Green
