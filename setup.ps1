@@ -3,7 +3,8 @@ param(
   [switch]$NoPython
 )
 
-Set-ExecutionPolicy Bypass -Scope Process -Force
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSCommandPath

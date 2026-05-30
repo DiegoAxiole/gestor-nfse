@@ -3,7 +3,8 @@ param(
   [int]$FrontendPort = 3000
 )
 
-Set-ExecutionPolicy Bypass -Scope Process -Force
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
 $RepoRoot = Split-Path -Parent $PSCommandPath
 if (-not $RepoRoot) {
