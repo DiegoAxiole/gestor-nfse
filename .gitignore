@@ -28,3 +28,10 @@ frontend/docs/
 
 # Frontend build output (rebuilt by vite)
 backend/dist/
+
+# Tooling config (opencode, AI Studio metadata)
+frontend/opencode.json
+frontend/.env.example
+
+# Empty init
+backend/data/__init__.py
