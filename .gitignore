@@ -1,0 +1,17 @@
+# Project root
+.serena/
+.codegraph/
+*.log
+.env
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+
+# State/store databases (runtime)
+data/state_store.db/
+data/stream_store/

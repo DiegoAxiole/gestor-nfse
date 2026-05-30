@@ -1,0 +1,25 @@
+[project]
+name = "nfse"
+version = "0.2.0"
+description = "API REST NFSe com FastAPI"
+requires-python = ">=3.12"
+dependencies = [
+    "pythonnet>=3.0.5",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "python-multipart>=0.0.20",
+    "cryptography>=44.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.28",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "certificado: testes que exigem certificado digital válido",
+]
