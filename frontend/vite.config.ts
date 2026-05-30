@@ -6,7 +6,7 @@ import {defineConfig} from 'vite';
 export default defineConfig(() => {
   return {
     build: {
-      outDir: path.resolve(__dirname, '../backend/nfse/dist'),
+      outDir: path.resolve(__dirname, '../backend/dist'),
       emptyOutDir: true,
     },
     plugins: [react(), tailwindcss()],

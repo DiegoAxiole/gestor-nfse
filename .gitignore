@@ -25,3 +25,6 @@ backend/dll/Unimake.UniDANFe/*.pdb
 # Auto-generated metadata
 frontend/metadata.json
 frontend/docs/
+
+# Frontend build output (rebuilt by vite)
+backend/dist/
