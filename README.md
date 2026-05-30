@@ -14,6 +14,14 @@ Abra o PowerShell como administrador e execute:
 
 O script detecta e instala tudo que precisa (Node.js, Python, dependências), exibindo o progresso de cada etapa. Zero dor de cabeça.
 
+Depois da instalação, para iniciar o projeto:
+
+```powershell
+.\start.ps1
+```
+
+Isso sobe o backend e o frontend automaticamente e abre o navegador.
+
 ## Setup manual
 
 Pré-requisitos: [Node.js 20+](https://nodejs.org), Python 3.12+ com [uv](https://docs.astral.sh/uv/#installation).
