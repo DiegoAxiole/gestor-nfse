@@ -266,20 +266,26 @@ Set-Location $backendDir
 # Descobrir uv
 $uvCmd = if (Test-Command uv) { "uv" } else { "$env:USERPROFILE\.local\bin\uv.exe" }
 
-Step "Instalando dependências Python..."
-Write-Host "  Comando: $uvCmd sync" -ForegroundColor DarkGray
-Write-Host "  Dependências:" -ForegroundColor DarkGray
-Write-Host "    • fastapi — Framework web" -ForegroundColor DarkGray
-Write-Host "    • uvicorn — Servidor ASGI" -ForegroundColor DarkGray
-Write-Host "    • pythonnet — Integração .NET (Unimake)" -ForegroundColor DarkGray
-Write-Host "    • cryptography — Manipulação de certificados" -ForegroundColor DarkGray
-Write-Host ""
-try {
-  & $uvCmd sync 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
-} catch {
-  Fail "Falha ao instalar dependências: $_"
+$venvDir = Join-Path $backendDir ".venv"
+if (Test-Path $venvDir) {
+  Step "Verificando dependências Python..."
+  Ok "Backend já configurado"
+} else {
+  Step "Instalando dependências Python..."
+  Write-Host "  Comando: $uvCmd sync" -ForegroundColor DarkGray
+  Write-Host "  Dependências:" -ForegroundColor DarkGray
+  Write-Host "    • fastapi — Framework web" -ForegroundColor DarkGray
+  Write-Host "    • uvicorn — Servidor ASGI" -ForegroundColor DarkGray
+  Write-Host "    • pythonnet — Integração .NET (Unimake)" -ForegroundColor DarkGray
+  Write-Host "    • cryptography — Manipulação de certificados" -ForegroundColor DarkGray
+  Write-Host ""
+  try {
+    & $uvCmd sync 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+  } catch {
+    Fail "Falha ao instalar dependências: $_"
+  }
+  Ok "Dependências do backend instaladas"
 }
-Ok "Dependências do backend instaladas"
 
 Step "Verificando config.toml..."
 $configFile = Join-Path $backendDir "config.toml"
@@ -304,48 +310,62 @@ Section "CONFIGURANDO FRONTEND"
 $frontendDir = Join-Path $RepoRoot "frontend"
 Set-Location $frontendDir
 
-Step "Instalando dependências Node.js..."
-Write-Host "  Comando: npm install" -ForegroundColor DarkGray
-Write-Host "  Dependências principais:" -ForegroundColor DarkGray
-Write-Host "    • react + react-dom — UI" -ForegroundColor DarkGray
-Write-Host "    • vite — Bundler e dev server" -ForegroundColor DarkGray
-Write-Host "    • tailwindcss — Estilos" -ForegroundColor DarkGray
-Write-Host "    • lucide-react — Ícones" -ForegroundColor DarkGray
-Write-Host "    • node-forge — Extração de certificados" -ForegroundColor DarkGray
-Write-Host ""
+$nodeModulesDir = Join-Path $frontendDir "node_modules"
+if (Test-Path $nodeModulesDir) {
+  Step "Verificando dependências Node.js..."
+  Ok "Frontend já configurado"
+} else {
+  Step "Instalando dependências Node.js..."
+  Write-Host "  Comando: npm install" -ForegroundColor DarkGray
+  Write-Host "  Dependências principais:" -ForegroundColor DarkGray
+  Write-Host "    • react + react-dom — UI" -ForegroundColor DarkGray
+  Write-Host "    • vite — Bundler e dev server" -ForegroundColor DarkGray
+  Write-Host "    • tailwindcss — Estilos" -ForegroundColor DarkGray
+  Write-Host "    • lucide-react — Ícones" -ForegroundColor DarkGray
+  Write-Host "    • node-forge — Extração de certificados" -ForegroundColor DarkGray
+  Write-Host ""
 
-try {
-  npm install --loglevel=warn 2>&1 | ForEach-Object {
-    if ($_ -match "error|ERR|fail") { Write-Host "    $_" -ForegroundColor Red }
-    elseif ($_ -match "warn|WARN") { Write-Host "    $_" -ForegroundColor DarkYellow }
+  try {
+    npm install --loglevel=warn 2>&1 | ForEach-Object {
+      if ($_ -match "error|ERR|fail") { Write-Host "    $_" -ForegroundColor Red }
+      elseif ($_ -match "warn|WARN") { Write-Host "    $_" -ForegroundColor DarkYellow }
+    }
+  } catch {
+    Fail "Falha ao instalar dependências do frontend: $_"
   }
-} catch {
-  Fail "Falha ao instalar dependências do frontend: $_"
+  Ok "Dependências do frontend instaladas"
 }
-Ok "Dependências do frontend instaladas"
 
 Set-Location $RepoRoot
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 6. BUILD DO FRONTEND
 # ═══════════════════════════════════════════════════════════════════════════
-Section "BUILD DO FRONTEND"
+$distDir = Join-Path $backendDir "dist"
+$distIndex = Join-Path $distDir "index.html"
+if (Test-Path $distIndex) {
+  Section "BUILD DO FRONTEND"
+  Step "Verificando build de produção..."
+  Ok "Frontend já compilado (backend/dist/)"
+} else {
+  Section "BUILD DO FRONTEND"
 
-Set-Location $frontendDir
-Step "Compilando frontend para produção..."
-Write-Host "  Saída: backend/dist/" -ForegroundColor DarkGray
-Write-Host ""
+  Set-Location $frontendDir
+  Step "Compilando frontend para produção..."
+  Write-Host "  Saída: backend/dist/" -ForegroundColor DarkGray
+  Write-Host ""
 
-try {
-  npm run build 2>&1 | ForEach-Object {
-    if ($_ -match "✓ built") { Write-Host "    $_" -ForegroundColor Green }
-    elseif ($_ -match "error|ERR") { Write-Host "    $_" -ForegroundColor Red }
-    else { Write-Host "    $_" -ForegroundColor DarkGray }
+  try {
+    npm run build 2>&1 | ForEach-Object {
+      if ($_ -match "✓ built") { Write-Host "    $_" -ForegroundColor Green }
+      elseif ($_ -match "error|ERR") { Write-Host "    $_" -ForegroundColor Red }
+      else { Write-Host "    $_" -ForegroundColor DarkGray }
+    }
+  } catch {
+    Fail "Falha ao compilar frontend: $_"
   }
-} catch {
-  Fail "Falha ao compilar frontend: $_"
+  Ok "Frontend compilado"
 }
-Ok "Frontend compilado"
 
 Set-Location $RepoRoot
 
