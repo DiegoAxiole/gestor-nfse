@@ -4,7 +4,6 @@ param(
 )
 
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSCommandPath
@@ -21,42 +20,6 @@ if (-not (Test-Path (Join-Path $RepoRoot "backend\main.py"))) {
   Write-Host "Navegue ate a pasta do gestor-nfse e tente:"
   Write-Host "  .\setup.ps1"
   exit 1
-}
-
-$script:ProgressCur = 0
-$script:ProgressMax = 100
-
-function Set-ProgressMax {
-  param([int]$Max)
-  $script:ProgressMax = [Math]::Max(1, $Max)
-}
-
-function Write-ProgressBar {
-  param([int]$Percent, [string]$Message, [string]$SubMessage = "")
-  $pct = [Math]::Min(99, [Math]::Max(0, $Percent))
-  Write-Progress -Activity "Setup - Gestor NFSe" -Status $Message -PercentComplete $pct -CurrentOperation $SubMessage
-}
-
-function Step-Progress {
-  param([string]$Label)
-  $script:ProgressCur++
-  $pct = [Math]::Min(99, [Math]::Round(($script:ProgressCur / $script:ProgressMax) * 100))
-  $remaining = $script:ProgressMax - $script:ProgressCur
-  Write-ProgressBar -Percent $pct -Message $Label -SubMessage "Faltam $remaining etapa(s)..."
-  Write-Host ""
-  Write-Host "  >> $Label" -ForegroundColor Cyan
-}
-
-function Complete-Progress {
-  Write-Progress -Activity "Setup - Gestor NFSe" -Completed
-}
-
-function Section {
-  param([string]$Title)
-  Write-Host ""
-  Write-Host ("-" * 50) -ForegroundColor DarkCyan
-  Write-Host "  $Title" -ForegroundColor DarkCyan
-  Write-Host ("-" * 50) -ForegroundColor DarkCyan
 }
 
 function Test-Command {
@@ -78,191 +41,117 @@ function Get-Version {
 }
 
 Write-Host ""
-Write-Host "  Setup - Gestor NFSe" -ForegroundColor White
-Write-Host "  Tudo automatico. Nenhuma acao necessaria." -ForegroundColor DarkGray
+Write-Host "SETUP - GESTOR NFSe" -ForegroundColor White
 Write-Host ""
-
-Section "PRE-VERIFICACAO"
 
 $hasUv = Test-Command "uv"
 $hasNode = Test-Command "node"
 
-Write-Host "  -> Verificando ferramentas instaladas..." -ForegroundColor Yellow
-Write-Host "     Node.js:  $(if ($hasNode) { 'OK' } else { '--' })" -ForegroundColor $(if ($hasNode) { 'Green' } else { 'DarkYellow' })
-Write-Host "     uv:       $(if ($hasUv) { 'OK' } else { '--' })" -ForegroundColor $(if ($hasUv) { 'Green' } else { 'DarkYellow' })
+Write-Host "Verificando ferramentas..." -ForegroundColor Yellow
+Write-Host "  Node.js: $(if ($hasNode) { 'OK' } else { 'ausente' })" -ForegroundColor $(if ($hasNode) { 'Green' } else { 'DarkYellow' })
+Write-Host "  uv:      $(if ($hasUv) { 'OK' } else { 'ausente' })" -ForegroundColor $(if ($hasUv) { 'Green' } else { 'DarkYellow' })
 Write-Host ""
 
-$activeSteps = 0
-if (-not $hasNode -and -not $NoNode) { $activeSteps++ }
-if (-not $hasUv -and -not $NoPython) { $activeSteps++; $activeSteps++ }
-if (-not (Test-Path (Join-Path $RepoRoot "backend\.venv"))) { $activeSteps++ }
-if (-not (Test-Path (Join-Path $RepoRoot "frontend\node_modules"))) { $activeSteps++ }
-if (-not (Test-Path (Join-Path $RepoRoot "backend\dist\index.html"))) { $activeSteps++ }
+$hasWork = $false
 
-if ($activeSteps -eq 0) {
-  Write-Host "  Tudo ja configurado!" -ForegroundColor Green
-  Write-Host "  Execute .\start.ps1 para iniciar." -ForegroundColor Green
-  exit 0
-}
-
-Set-ProgressMax $activeSteps
-
+# Instalar Node.js
 if (-not $hasNode -and -not $NoNode) {
-  Section "INSTALANDO NODE.JS"
-
+  $hasWork = $true
+  Write-Host "INSTALANDO NODE.JS" -ForegroundColor White
   $arch = if ([Environment]::Is64BitOperatingSystem) { "x64" } else { "x86" }
-  $nodeVersion = "22.14.0"
-  $nodeUrl = "https://nodejs.org/dist/v$nodeVersion/node-v$nodeVersion-$arch.msi"
+  $nodeUrl = "https://nodejs.org/dist/v22.14.0/node-v22.14.0-$arch.msi"
   $nodeMsi = "$env:TEMP\node-install.msi"
-  $nodeSize = "~55 MB"
-
-  Step-Progress "Instalando Node.js $nodeVersion"
-  Write-Host "  Tamanho: $nodeSize" -ForegroundColor DarkGray
-
   Write-Host "  Baixando..." -ForegroundColor Yellow
-  Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeMsi -UseBasicParsing
-  Write-Host "  OK Download concluido" -ForegroundColor Green
-
-  Write-Host "  Instalando... (pode levar ate 2 minutos)" -ForegroundColor Yellow
-  $job = Start-Job -ScriptBlock { param($m) Start-Process msiexec -ArgumentList "/i `"$m`" /quiet /norestart" -Wait -NoNewWindow } -ArgumentList $nodeMsi
-  while ($job.State -eq 'Running') {
-    Write-Host "`r  Instalando Node.js..." -NoNewline
-    Start-Sleep -Milliseconds 1000
-  }
-  Receive-Job $job -Wait -ErrorAction SilentlyContinue | Out-Null
-  Remove-Job $job -Force
+  (New-Object System.Net.WebClient).DownloadFile($nodeUrl, $nodeMsi)
+  Write-Host "  OK" -ForegroundColor Green
+  Write-Host "  Instalando..." -ForegroundColor Yellow
+  Start-Process msiexec -ArgumentList "/i `"$nodeMsi`" /quiet /norestart" -Wait
   Remove-Item $nodeMsi -Force
-  Write-Host "`r  Node.js instalado com sucesso      " -ForegroundColor Green
-
   $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
-  Start-Sleep -Seconds 1
-  if (Test-Command "node") { Write-Host "  OK Node.js $(Get-Version "node") funcionando" -ForegroundColor Green }
+  if (Test-Command "node") { Write-Host "  OK Node.js $(Get-Version "node")" -ForegroundColor Green }
   Write-Host ""
 }
 
+# Instalar uv
 if (-not $hasUv -and -not $NoPython) {
-  Section "INSTALANDO uv"
-
+  $hasWork = $true
+  Write-Host "INSTALANDO uv" -ForegroundColor White
   $uvUrl = "https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip"
   $uvZip = "$env:TEMP\uv.zip"
   $uvDir = "$env:TEMP\uv-extract"
-
-  Step-Progress "Instalando uv (gerenciador Python)"
-
-  Write-Host "  Baixando uv..." -ForegroundColor Yellow
-  Invoke-WebRequest -Uri $uvUrl -OutFile $uvZip -UseBasicParsing
-  Write-Host "  OK Download concluido" -ForegroundColor Green
-
+  Write-Host "  Baixando..." -ForegroundColor Yellow
+  (New-Object System.Net.WebClient).DownloadFile($uvUrl, $uvZip)
+  Write-Host "  OK" -ForegroundColor Green
   Write-Host "  Extraindo..." -ForegroundColor Yellow
   if (Test-Path $uvDir) { Remove-Item $uvDir -Recurse -Force }
   Expand-Archive -Path $uvZip -DestinationPath $uvDir -Force
   Remove-Item $uvZip -Force
   $uvExe = Get-ChildItem -Path $uvDir -Recurse -Filter "uv.exe" | Select-Object -First 1
-  if (-not $uvExe) { Write-Host "  ERRO: uv.exe nao encontrado" -ForegroundColor Red; exit 1 }
   $binDir = "$env:USERPROFILE\.local\bin"
   if (-not (Test-Path $binDir)) { New-Item -ItemType Directory -Path $binDir -Force | Out-Null }
   Copy-Item -Path $uvExe.FullName -Destination "$binDir\uv.exe" -Force
   Remove-Item $uvDir -Recurse -Force
   $env:Path = "$binDir;$env:Path"
-  if (Test-Command "uv") { Write-Host "  OK uv $(Get-Version "uv") instalado" -ForegroundColor Green }
+  if (Test-Command "uv") { Write-Host "  OK uv $(Get-Version "uv")" -ForegroundColor Green }
   Write-Host ""
 
-  Section "INSTALANDO PYTHON 3.12"
-  Step-Progress "Instalando Python 3.12 via uv"
-  Write-Host "  (pode levar alguns minutos, baixando ~30 MB)" -ForegroundColor Yellow
-  try {
-    & "$binDir\uv.exe" python install 3.12 2>&1 | ForEach-Object {
-      if ($_ -match "(\d+\.?\d*)%") {
-        Write-Host "`r  Progresso: $_" -NoNewline -ForegroundColor DarkGray
-      }
-    }
-  } catch {
-    Write-Host "`n  ERRO: $_" -ForegroundColor Red
-    exit 1
-  }
-  Write-Host "`r  OK Python 3.12 pronto                   " -ForegroundColor Green
+  Write-Host "INSTALANDO PYTHON" -ForegroundColor White
+  $uvc = if (Test-Command "uv") { "uv" } else { "$binDir\uv.exe" }
+  Write-Host "  Baixando Python 3.12..." -ForegroundColor Yellow
+  & $uvc python install 3.12 2>&1 | Out-Null
+  Write-Host "  OK Python 3.12" -ForegroundColor Green
   Write-Host ""
 }
 
-Section "CONFIGURANDO BACKEND"
-
+# Backend
+Write-Host "CONFIGURANDO BACKEND" -ForegroundColor White
 $backendDir = Join-Path $RepoRoot "backend"
-$venvDir = Join-Path $backendDir ".venv"
-$uvCmd = if (Test-Command "uv") { "uv" } else { "$env:USERPROFILE\.local\bin\uv.exe" }
-
-if (Test-Path $venvDir) {
-  Write-Host "  -> Backend ja configurado" -ForegroundColor Green
-} else {
-  Step-Progress "Instalando dependencias Python"
+$uvc = if (Test-Command "uv") { "uv" } else { "$env:USERPROFILE\.local\bin\uv.exe" }
+if (-not (Test-Path (Join-Path $backendDir ".venv"))) {
+  $hasWork = $true
+  Write-Host "  Instalando dependencias..." -ForegroundColor Yellow
   Push-Location $backendDir
-  Write-Host "  Comando: uv sync" -ForegroundColor DarkGray
-  try {
-    & $uvCmd sync 2>&1 | ForEach-Object {
-      if ($_ -match "error|ERRO") { Write-Host "    $_" -ForegroundColor Red }
-      elseif ($_ -match "Resolved|Prepared|Installed|Downloaded") { Write-Host "    $_" -ForegroundColor Green }
-      else { Write-Host "    $_" -ForegroundColor DarkGray }
-    }
-  } catch { Write-Host "  ERRO: $_" -ForegroundColor Red; Pop-Location; exit 1 }
+  & $uvc sync 2>&1 | Out-Null
   Pop-Location
-  Write-Host "  OK Dependencias instaladas" -ForegroundColor Green
+  Write-Host "  OK" -ForegroundColor Green
+} else {
+  Write-Host "  Ja configurado" -ForegroundColor Green
 }
-
-$configFile = Join-Path $backendDir "config.toml"
-if (Test-Path $configFile) { Write-Host "  -> config.toml encontrado (opcional)" -ForegroundColor Green }
 Write-Host ""
 
-Section "CONFIGURANDO FRONTEND"
-
+# Frontend
+Write-Host "CONFIGURANDO FRONTEND" -ForegroundColor White
 $frontendDir = Join-Path $RepoRoot "frontend"
-$nodeModulesDir = Join-Path $frontendDir "node_modules"
-
-if (Test-Path $nodeModulesDir) {
-  Write-Host "  -> Frontend ja configurado" -ForegroundColor Green
-} else {
-  Step-Progress "Instalando dependencias Node.js"
+if (-not (Test-Path (Join-Path $frontendDir "node_modules"))) {
+  $hasWork = $true
+  Write-Host "  Instalando dependencias..." -ForegroundColor Yellow
   Push-Location $frontendDir
-  Write-Host "  Comando: npm install" -ForegroundColor DarkGray
-  try {
-    npm install --loglevel=warn 2>&1 | ForEach-Object {
-      if ($_ -match "error|ERR|fail") { Write-Host "    $_" -ForegroundColor Red }
-      elseif ($_ -match "added|packages") { Write-Host "    $_" -ForegroundColor Green }
-      else { Write-Host "    $_" -ForegroundColor DarkGray }
-    }
-  } catch { Write-Host "  ERRO: $_" -ForegroundColor Red; Pop-Location; exit 1 }
+  npm install --loglevel=warn 2>&1 | Out-Null
   Pop-Location
-  Write-Host "  OK Dependencias instaladas" -ForegroundColor Green
+  Write-Host "  OK" -ForegroundColor Green
+} else {
+  Write-Host "  Ja configurado" -ForegroundColor Green
 }
 Write-Host ""
 
-Section "COMPILANDO FRONTEND"
-
-$distIndex = Join-Path $backendDir "dist\index.html"
-
-if (Test-Path $distIndex) {
-  Write-Host "  -> Frontend ja compilado" -ForegroundColor Green
-} else {
-  Step-Progress "Compilando frontend para producao"
+# Build
+Write-Host "COMPILANDO FRONTEND" -ForegroundColor White
+if (-not (Test-Path (Join-Path $backendDir "dist\index.html"))) {
+  $hasWork = $true
+  Write-Host "  Compilando..." -ForegroundColor Yellow
   Push-Location $frontendDir
-  Write-Host "  Comando: npm run build" -ForegroundColor DarkGray
-  Write-Host "  Saida: backend/dist/" -ForegroundColor DarkGray
-  try {
-    npm run build 2>&1 | ForEach-Object {
-      if ($_ -match "error|ERR") { Write-Host "    $_" -ForegroundColor Red }
-      elseif ($_ -match "built in") { Write-Host "    $_" -ForegroundColor Green }
-      elseif ($_ -match "\d+ modules") { Write-Host "    $_" -ForegroundColor Green }
-      else { Write-Host "    $_" -ForegroundColor DarkGray }
-    }
-  } catch { Write-Host "  ERRO: $_" -ForegroundColor Red; Pop-Location; exit 1 }
+  npm run build 2>&1 | Out-Null
   Pop-Location
-  Write-Host "  OK Frontend compilado" -ForegroundColor Green
+  Write-Host "  OK" -ForegroundColor Green
+} else {
+  Write-Host "  Ja compilado" -ForegroundColor Green
 }
 Write-Host ""
 
-Complete-Progress
-
-Write-Host "  ==========================================" -ForegroundColor Green
-Write-Host "    SETUP CONCLUIDO COM SUCESSO!" -ForegroundColor White
-Write-Host "  ==========================================" -ForegroundColor Green
-Write-Host ""
-Write-Host "  Para iniciar: .\start.ps1" -ForegroundColor Yellow
-Write-Host ""
+if (-not $hasWork) {
+  Write-Host "Tudo ja configurado!" -ForegroundColor Green
+  Write-Host "Execute .\start.ps1" -ForegroundColor Yellow
+} else {
+  Write-Host "SETUP CONCLUIDO!" -ForegroundColor Green
+  Write-Host "Execute .\start.ps1" -ForegroundColor Yellow
+}
