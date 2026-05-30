@@ -10,10 +10,9 @@ if (-not $RepoRoot) {
   Write-Host "║  ERRO: Execute o script como arquivo .ps1            ║" -ForegroundColor Red
   Write-Host "╠═══════════════════════════════════════════════════════╣" -ForegroundColor Red
   Write-Host "║                                                     " -ForegroundColor Red
-  Write-Host "║  Não cole os comandos no terminal. Use:" -ForegroundColor White
-  Write-Host "║                                                     " -ForegroundColor Red
-  Write-Host "║     cd C:\caminho\para\gestor-nfse" -ForegroundColor Green
-  Write-Host "║     .\start.ps1" -ForegroundColor Green
+  Write-Host "║  Não cole os comandos no terminal." -ForegroundColor White
+  Write-Host "║  No PowerShell, navegue até a pasta do projeto" -ForegroundColor White
+  Write-Host "║  e digite: .\start.ps1" -ForegroundColor Green
   Write-Host "║                                                     " -ForegroundColor Red
   Write-Host "╚═══════════════════════════════════════════════════════╝" -ForegroundColor Red
   exit 1
@@ -24,9 +23,8 @@ if (-not (Test-Path (Join-Path $RepoRoot "backend\main.py"))) {
   Write-Host "║  ERRO: Script fora da pasta do projeto               ║" -ForegroundColor Red
   Write-Host "╠═══════════════════════════════════════════════════════╣" -ForegroundColor Red
   Write-Host "║                                                     " -ForegroundColor Red
-  Write-Host "║  Navegue até a pasta correta e tente novamente:" -ForegroundColor White
+  Write-Host "║  Navegue até a pasta do gestor-nfse e tente:" -ForegroundColor White
   Write-Host "║                                                     " -ForegroundColor Red
-  Write-Host "║     cd C:\caminho\para\gestor-nfse" -ForegroundColor Green
   Write-Host "║     .\start.ps1" -ForegroundColor Green
   Write-Host "║                                                     " -ForegroundColor Red
   Write-Host "╚═══════════════════════════════════════════════════════╝" -ForegroundColor Red
