@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 
 # ─── helpers ──────────────────────────────────────────────────────────────
 
