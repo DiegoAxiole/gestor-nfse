@@ -15,8 +15,12 @@ cd backend
 uv sync
 uv run uvicorn main:app --port 8001
 
-# Frontend
+# Frontend (dev)
 cd frontend
 npm install
 npm run dev
+
+# Frontend (build p/ produção — gera backend/dist/)
+cd frontend
+npm run build
 ```
