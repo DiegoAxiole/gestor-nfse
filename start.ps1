@@ -21,6 +21,39 @@ if (-not (Test-Path (Join-Path $RepoRoot "backend\main.py"))) {
   exit 1
 }
 
+function Test-Command {
+  param([string]$Name)
+  try { Get-Command $Name -ErrorAction Stop | Out-Null; return $true }
+  catch { return $false }
+}
+
+$backendDir = Join-Path $RepoRoot "backend"
+$frontendDir = Join-Path $RepoRoot "frontend"
+
+# Find or install uv
+if (Test-Command "uv") {
+  $uv = "uv"
+} elseif (Test-Command "$env:USERPROFILE\.local\bin\uv.exe") {
+  $uv = "$env:USERPROFILE\.local\bin\uv.exe"
+} else {
+  Write-Host "  uv nao encontrado. Instalando automaticamente..." -ForegroundColor Yellow
+  $uvUrl = "https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip"
+  $uvZip = "$env:TEMP\uv.zip"
+  $uvDir = "$env:TEMP\uv-extract"
+  Invoke-WebRequest -Uri $uvUrl -OutFile $uvZip -UseBasicParsing
+  if (Test-Path $uvDir) { Remove-Item $uvDir -Recurse -Force }
+  Expand-Archive -Path $uvZip -DestinationPath $uvDir -Force
+  Remove-Item $uvZip -Force
+  $uvExe = Get-ChildItem -Path $uvDir -Recurse -Filter "uv.exe" | Select-Object -First 1
+  if (-not $uvExe) { Write-Host "  ERRO: Falha ao instalar uv" -ForegroundColor Red; exit 1 }
+  $binDir = "$env:USERPROFILE\.local\bin"
+  if (-not (Test-Path $binDir)) { New-Item -ItemType Directory -Path $binDir -Force | Out-Null }
+  Copy-Item -Path $uvExe.FullName -Destination "$binDir\uv.exe" -Force
+  Remove-Item $uvDir -Recurse -Force
+  $uv = "$binDir\uv.exe"
+  Write-Host "  OK uv instalado" -ForegroundColor Green
+}
+
 $script:ProgressCur = 0
 $script:ProgressMax = 100
 
@@ -47,10 +80,6 @@ function Step-Progress {
 function Complete-Progress {
   Write-Progress -Activity "Iniciando Gestor NFSe" -Completed
 }
-
-$backendDir = Join-Path $RepoRoot "backend"
-$frontendDir = Join-Path $RepoRoot "frontend"
-$uv = if (Get-Command "uv" -ErrorAction SilentlyContinue) { "uv" } else { "$env:USERPROFILE\.local\bin\uv.exe" }
 
 Write-Host ""
 Write-Host "  Iniciando Gestor NFSe" -ForegroundColor White

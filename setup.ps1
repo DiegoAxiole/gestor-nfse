@@ -50,26 +50,6 @@ function Complete-Progress {
   Write-Progress -Activity "Setup - Gestor NFSe" -Completed
 }
 
-function Download-File {
-  param([string]$Url, [string]$Dest, [string]$Label)
-  Write-Host "  Baixando $Label..." -ForegroundColor Yellow
-  Write-Host "    $Url" -ForegroundColor DarkGray
-  $wc = New-Object System.Net.WebClient
-  Register-ObjectEvent $wc DownloadProgressChanged -Action {
-    $pct = $EventArgs.ProgressPercentage
-    $rec = [Math]::Round($EventArgs.BytesReceived / 1MB, 1)
-    $tot = [Math]::Round($EventArgs.TotalBytesToReceive / 1MB, 1)
-    Write-Progress -Activity "Download: $Label" -Status "$pct% ($rec/$tot MB)" -PercentComplete $pct -Id 2 -ParentId 1
-  } | Out-Null
-  $wc.DownloadFileAsync($Url, $Dest)
-  while ($wc.IsBusy) { Start-Sleep -Milliseconds 100 }
-  $wc.Dispose()
-  Write-Progress -Activity "Download: $Label" -Completed -Id 2 -ParentId 1
-  $arq = Get-Item $Dest
-  $mb = [Math]::Round($arq.Length / 1MB, 1)
-  Write-Host "  OK $Label baixado ($mb MB)" -ForegroundColor Green
-}
-
 function Section {
   param([string]$Title)
   Write-Host ""
@@ -113,8 +93,7 @@ Write-Host ""
 
 $activeSteps = 0
 if (-not $hasNode -and -not $NoNode) { $activeSteps++ }
-if (-not $hasUv -and -not $NoPython) { $activeSteps++ }
-if (-not $hasUv -and -not $NoPython) { $activeSteps++ }
+if (-not $hasUv -and -not $NoPython) { $activeSteps++; $activeSteps++ }
 if (-not (Test-Path (Join-Path $RepoRoot "backend\.venv"))) { $activeSteps++ }
 if (-not (Test-Path (Join-Path $RepoRoot "frontend\node_modules"))) { $activeSteps++ }
 if (-not (Test-Path (Join-Path $RepoRoot "backend\dist\index.html"))) { $activeSteps++ }
@@ -134,19 +113,20 @@ if (-not $hasNode -and -not $NoNode) {
   $nodeVersion = "22.14.0"
   $nodeUrl = "https://nodejs.org/dist/v$nodeVersion/node-v$nodeVersion-$arch.msi"
   $nodeMsi = "$env:TEMP\node-install.msi"
+  $nodeSize = "~55 MB"
 
   Step-Progress "Instalando Node.js $nodeVersion"
+  Write-Host "  Tamanho: $nodeSize" -ForegroundColor DarkGray
 
-  Download-File -Url $nodeUrl -Dest $nodeMsi -Label "Node.js $nodeVersion (~55 MB)"
+  Write-Host "  Baixando..." -ForegroundColor Yellow
+  Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeMsi -UseBasicParsing
+  Write-Host "  OK Download concluido" -ForegroundColor Green
 
   Write-Host "  Instalando... (pode levar ate 2 minutos)" -ForegroundColor Yellow
   $job = Start-Job -ScriptBlock { param($m) Start-Process msiexec -ArgumentList "/i `"$m`" /quiet /norestart" -Wait -NoNewWindow } -ArgumentList $nodeMsi
-  $frames = '.  ', '.. ', '...'
-  $i = 0
   while ($job.State -eq 'Running') {
-    Write-Host "`r  Instalando Node.js $($frames[$i % 3])" -NoNewline
-    $i++
-    Start-Sleep -Milliseconds 800
+    Write-Host "`r  Instalando Node.js..." -NoNewline
+    Start-Sleep -Milliseconds 1000
   }
   Receive-Job $job -Wait -ErrorAction SilentlyContinue | Out-Null
   Remove-Job $job -Force
@@ -168,7 +148,9 @@ if (-not $hasUv -and -not $NoPython) {
 
   Step-Progress "Instalando uv (gerenciador Python)"
 
-  Download-File -Url $uvUrl -Dest $uvZip -Label "uv (~15 MB)"
+  Write-Host "  Baixando uv..." -ForegroundColor Yellow
+  Invoke-WebRequest -Uri $uvUrl -OutFile $uvZip -UseBasicParsing
+  Write-Host "  OK Download concluido" -ForegroundColor Green
 
   Write-Host "  Extraindo..." -ForegroundColor Yellow
   if (Test-Path $uvDir) { Remove-Item $uvDir -Recurse -Force }
@@ -186,7 +168,7 @@ if (-not $hasUv -and -not $NoPython) {
 
   Section "INSTALANDO PYTHON 3.12"
   Step-Progress "Instalando Python 3.12 via uv"
-  Write-Host "  (baixando ~30 MB, pode levar alguns minutos)" -ForegroundColor Yellow
+  Write-Host "  (pode levar alguns minutos, baixando ~30 MB)" -ForegroundColor Yellow
   try {
     & "$binDir\uv.exe" python install 3.12 2>&1 | ForEach-Object {
       if ($_ -match "(\d+\.?\d*)%") {
