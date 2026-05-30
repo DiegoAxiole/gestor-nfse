@@ -17,7 +17,10 @@ class Config:
 
 
 def carregar_config(caminho: str | Path) -> Config:
-    """Carrega e valida a configuração a partir de um arquivo TOML.
+    """Carrega a configuração a partir de um arquivo TOML (opcional).
+
+    Se o arquivo não existir, usa valores padrão — o usuário pode
+    configurar tudo via frontend depois.
 
     Args:
         caminho: Caminho do arquivo config.toml.
@@ -29,21 +32,30 @@ def carregar_config(caminho: str | Path) -> Config:
         ValueError: Se o ambiente não for 'Homologacao' ou 'Producao'.
     """
     caminho = Path(caminho).resolve()
-    with open(caminho, "rb") as f:
-        dados = tomllib.load(f)
+    base_dir = caminho.parent
 
-    ambiente = dados.get("geral", {}).get("ambiente", "Homologacao")
-    if ambiente not in ("Homologacao", "Producao"):
-        raise ValueError(f"Ambiente inválido: {ambiente}. Use 'Homologacao' ou 'Producao'.")
+    if caminho.exists():
+        with open(caminho, "rb") as f:
+            dados = tomllib.load(f)
 
-    sqlite_caminho = dados.get("data", {}).get("sqlite_caminho", "data/nfse.sqlite")
+        ambiente = dados.get("geral", {}).get("ambiente", "Homologacao")
+        if ambiente not in ("Homologacao", "Producao"):
+            raise ValueError(f"Ambiente inválido: {ambiente}. Use 'Homologacao' ou 'Producao'.")
+
+        sqlite_caminho = dados.get("data", {}).get("sqlite_caminho", "data/nfse.sqlite")
+        codigo_municipio = dados.get("geral", {}).get("codigo_municipio", 1001058)
+        certificado_caminho = dados.get("certificado", {}).get("caminho", "")
+        certificado_senha = dados.get("certificado", {}).get("senha", "")
+    else:
+        ambiente = "Homologacao"
+        sqlite_caminho = "data/nfse.sqlite"
+        codigo_municipio = 1001058
+        certificado_caminho = ""
+        certificado_senha = ""
+
     sqlite_path = Path(sqlite_caminho)
     if not sqlite_path.is_absolute():
-        sqlite_path = (caminho.parent / sqlite_path).resolve()
-
-    codigo_municipio = dados.get("geral", {}).get("codigo_municipio", 1001058)
-    certificado_caminho = dados.get("certificado", {}).get("caminho", "")
-    certificado_senha = dados.get("certificado", {}).get("senha", "")
+        sqlite_path = (base_dir / sqlite_path).resolve()
 
     config = Config(
         ambiente=ambiente,
@@ -51,7 +63,7 @@ def carregar_config(caminho: str | Path) -> Config:
         codigo_municipio=codigo_municipio,
         certificado_caminho=certificado_caminho,
         certificado_senha=certificado_senha,
-        _base_dir=caminho.parent,
+        _base_dir=base_dir,
     )
 
     from shared.database import Database
