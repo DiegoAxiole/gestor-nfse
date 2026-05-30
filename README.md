@@ -4,37 +4,43 @@
 
 Gestão de Notas Fiscais de Serviço Eletrônica — frontend React + backend FastAPI com integração Unimake SEFAZ.
 
-## Pré-requisitos
+## Setup automático (recomendado)
 
-- Python 3.12+ — instale com [uv](https://docs.astral.sh/uv/#installation)
-- Node.js 20+
-- Certificado Digital A1 (NFSe) — opcional para homologação
+Abra o PowerShell como administrador e execute:
 
-## Setup
+```powershell
+.\setup.ps1
+```
+
+O script detecta e instala tudo que precisa (Node.js, Python, dependências), exibindo o progresso de cada etapa. Zero dor de cabeça.
+
+## Setup manual
+
+Pré-requisitos: [Node.js 20+](https://nodejs.org), Python 3.12+ com [uv](https://docs.astral.sh/uv/#installation).
 
 ```bash
-# 1. Backend
-cd gestor_nfse/backend
+# Backend
+cd backend
 uv sync
-cp config.toml.example config.toml
-# Edite config.toml com seus dados (CNPJ, certificado, ambiente)
+cp config.toml.example config.toml   # edite com seus dados
 uv run uvicorn main:app --host 127.0.0.1 --port 8001
 
-# 2. Frontend (outro terminal)
-cd gestor_nfse/frontend
+# Frontend (outro terminal)
+cd frontend
 npm install
 npm run dev
 ```
 
-- **Frontend**: http://localhost:3000
+- **App**: http://localhost:3000
 - **API Docs**: http://localhost:8001/docs
 
 ## Produção
 
 ```bash
-cd gestor_nfse/frontend
-npm run build
+cd frontend
+npm run build         # gera backend/dist/
 ```
+
 O backend serve o frontend buildado em http://localhost:8001.
 
 ## Estrutura
