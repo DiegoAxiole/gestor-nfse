@@ -1,7 +1,6 @@
 """Inicialização DLL Unimake, certificado digital e ServiceBase.
 
-Dependências externas: clr (pythonnet), Unimake.Business.DFe.dll,
-Unimake.Unidanfe.dll.
+Dependências externas: clr (pythonnet), Unimake.Business.DFe.dll.
 """
 
 import os
@@ -20,7 +19,6 @@ def inicializar_dll() -> None:
         return
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     clr.AddReference(os.path.join(base, 'dll', 'Unimake.DFe', 'Unimake.Business.DFe.dll'))
-    clr.AddReference(os.path.join(base, 'dll', 'Unimake.UniDANFe', 'Unimake.Unidanfe.dll'))
     _INICIALIZADO = True
 
 
