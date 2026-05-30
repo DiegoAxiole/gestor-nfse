@@ -32,7 +32,8 @@ function Download-File {
   $totalMB = if ($total -gt 0) { [Math]::Round($total / 1MB, 1) } else { "?" }
   Write-Host "  Baixando $Label ($totalMB MB)..." -ForegroundColor Yellow
   try {
-    Invoke-WebRequest -Uri $Url -OutFile $Dest
+    & "curl.exe" -# -L -o "$Dest" "$Url" 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "curl exit code $LASTEXITCODE" }
     $arq = Get-Item $Dest
     Write-Host "  OK $([Math]::Round($arq.Length / 1MB, 1)) MB baixado" -ForegroundColor Green
     return $true
