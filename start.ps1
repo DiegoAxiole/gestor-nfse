@@ -2,10 +2,9 @@ param()
 
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
-$ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSCommandPath
 if (-not $RepoRoot -or -not (Test-Path (Join-Path $RepoRoot "backend\main.py"))) {
-  Write-Host "ERRO: Execute na pasta do gestor-nfse"
+  Write-Host "ERRO: Execute .\start.ps1 na pasta raiz do gestor-nfse"
   exit 1
 }
 
@@ -20,9 +19,8 @@ function Get-Ver {
   try { $v = & $Exe --version 2>&1; if ($v -match "(\d+\.\d+\.\d+)") { return $Matches[1] } } catch {}
 }
 
-function Download-Progress {
+function Download-File {
   param($Url, $Dest, $Label)
-  $total = 0
   try {
     $req = [System.Net.WebRequest]::Create($Url)
     $req.Method = "HEAD"
@@ -30,28 +28,18 @@ function Download-Progress {
     $resp = $req.GetResponse()
     $total = $resp.ContentLength
     $resp.Close()
-  } catch {}
+  } catch { $total = 0 }
   $totalMB = if ($total -gt 0) { [Math]::Round($total / 1MB, 1) } else { "?" }
   Write-Host "  Baixando $Label ($totalMB MB)..." -ForegroundColor Yellow
-  if (Test-Path $Dest) { Remove-Item $Dest -Force }
-  $job = Start-Job { param($u,$d) $w=[System.Net.WebClient]::new(); $w.DownloadFile($u,$d); $w.Dispose() } -Arg $Url,$Dest
-  while ($job.State -eq 'Running') {
-    if (Test-Path $Dest) {
-      $cur = (Get-Item $Dest).Length
-      if ($total -gt 0) {
-        $pct = [Math]::Min(99, [Math]::Round(($cur/$total)*100))
-        $rec = [Math]::Round($cur/1MB,1)
-        $totM = [Math]::Round($total/1MB,1)
-        Write-Progress -Activity "Download: $Label" -Status "$pct% ($rec/$totM MB)" -PercentComplete $pct
-      }
-    }
-    Start-Sleep -Milliseconds 300
+  try {
+    Invoke-WebRequest -Uri $Url -OutFile $Dest
+    $arq = Get-Item $Dest
+    Write-Host "  OK $([Math]::Round($arq.Length / 1MB, 1)) MB baixado" -ForegroundColor Green
+    return $true
+  } catch {
+    Write-Host "  ERRO download: $_" -ForegroundColor Red
+    return $false
   }
-  Receive-Job $job -ErrorAction SilentlyContinue | Out-Null
-  Remove-Job $job
-  Write-Progress -Activity "Download: $Label" -Completed
-  $arq = Get-Item $Dest
-  Write-Host "  OK $([Math]::Round($arq.Length / 1MB, 1)) MB baixado" -ForegroundColor Green
 }
 
 function Until-Open {
@@ -76,7 +64,6 @@ Write-Host ""
 $backendDir = Join-Path $RepoRoot "backend"
 $frontendDir = Join-Path $RepoRoot "frontend"
 $hasUv = Test-Cmd "uv"
-$needsSetup = $false
 
 # --- Install uv if missing ---
 if (-not $hasUv) {
@@ -84,37 +71,38 @@ if (-not $hasUv) {
   $url = "https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip"
   $zip = "$env:TEMP\uv.zip"
   $dir = "$env:TEMP\uv-extract"
-  Download-Progress $url $zip "uv"
-  Write-Host "  Extraindo..." -ForegroundColor Yellow
-  if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
-  Expand-Archive -Path $zip -DestinationPath $dir -Force
-  Remove-Item $zip -Force
-  $exe = Get-ChildItem -Path $dir -Recurse -Filter "uv.exe" | Select-Object -First 1
-  $binDir = "$env:USERPROFILE\.local\bin"
-  if (-not (Test-Path $binDir)) { New-Item $binDir -ItemType Directory -Force | Out-Null }
-  Copy-Item $exe.FullName "$binDir\uv.exe" -Force
-  Remove-Item $dir -Recurse -Force
-  $env:Path = "$binDir;$env:Path"
-  $hasUv = $true
-  Write-Host "  OK uv $(Get-Ver "uv")" -ForegroundColor Green
+  if (Download-File $url $zip "uv") {
+    Write-Host "  Extraindo..." -ForegroundColor Yellow
+    if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
+    Expand-Archive -Path $zip -DestinationPath $dir
+    Remove-Item $zip -Force
+    $exe = Get-ChildItem -Path $dir -Recurse -Filter "uv.exe" | Select-Object -First 1
+    $binDir = "$env:USERPROFILE\.local\bin"
+    if (-not (Test-Path $binDir)) { New-Item $binDir -ItemType Directory -Force | Out-Null }
+    Copy-Item $exe.FullName "$binDir\uv.exe" -Force
+    Remove-Item $dir -Recurse -Force
+    $env:Path = "$binDir;$env:Path"
+    $hasUv = $true
+    Write-Host "  OK uv $(Get-Ver "uv")" -ForegroundColor Green
+  }
 }
 
 $uvc = if (Test-Cmd "uv") { "uv" } else { "$env:USERPROFILE\.local\bin\uv.exe" }
 
-# --- Check deps ---
+# --- Auto-install deps if missing ---
 if (-not (Test-Path (Join-Path $backendDir ".venv"))) {
   Write-Host "-- BACKEND: Dependencias --" -ForegroundColor DarkCyan
-  Write-Host "  Instalando Python..." -ForegroundColor Yellow
+  Write-Host "  Instalando dependencias Python..." -ForegroundColor Yellow
   Push-Location $backendDir
-  & $uvc sync 2>&1 | Out-Null
+  & $uvc sync
   Pop-Location
   Write-Host "  OK" -ForegroundColor Green
 }
 if (-not (Test-Path (Join-Path $frontendDir "node_modules"))) {
   Write-Host "-- FRONTEND: Dependencias --" -ForegroundColor DarkCyan
-  Write-Host "  Instalando dependencias..." -ForegroundColor Yellow
+  Write-Host "  Instalando dependencias Node..." -ForegroundColor Yellow
   Push-Location $frontendDir
-  npm install --loglevel=warn 2>&1 | Out-Null
+  npm install --no-progress
   Pop-Location
   Write-Host "  OK" -ForegroundColor Green
 }
@@ -122,7 +110,7 @@ if (-not (Test-Path (Join-Path $backendDir "dist\index.html"))) {
   Write-Host "-- BUILD --" -ForegroundColor DarkCyan
   Write-Host "  Compilando frontend..." -ForegroundColor Yellow
   Push-Location $frontendDir
-  npm run build 2>&1 | Out-Null
+  npm run build
   Pop-Location
   Write-Host "  OK compilado" -ForegroundColor Green
 }
@@ -134,9 +122,9 @@ Write-Host "Iniciando servidores..." -ForegroundColor Yellow
 $backendLog = Join-Path $RepoRoot "backend.log"
 $frontendLog = Join-Path $RepoRoot "frontend.log"
 
-$pBackend = Start-Process powershell -WindowStyle Hidden -ArgumentList "-NoExit", "-Command", "Set-Location '$backendDir'; & $uvc run uvicorn main:app --host 127.0.0.1 --port 8001 | Tee-Object '$backendLog'"
+Start-Process powershell -WindowStyle Hidden -ArgumentList "-NoExit", "-Command", "Set-Location '$backendDir'; & $uvc run uvicorn main:app --host 127.0.0.1 --port 8001 | Tee-Object '$backendLog'"
 
-$pFrontend = Start-Process powershell -WindowStyle Hidden -ArgumentList "-NoExit", "-Command", "Set-Location '$frontendDir'; npm run dev | Tee-Object '$frontendLog'"
+Start-Process powershell -WindowStyle Hidden -ArgumentList "-NoExit", "-Command", "Set-Location '$frontendDir'; npm run dev | Tee-Object '$frontendLog'"
 
 Until-Open "http://127.0.0.1:8001" "backend"
 Until-Open "http://127.0.0.1:3000" "frontend"
