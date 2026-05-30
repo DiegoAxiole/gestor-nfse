@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$RepoRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+$RepoRoot = Split-Path -Parent $PSCommandPath
 
 # ─── helpers ──────────────────────────────────────────────────────────────
 

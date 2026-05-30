@@ -3,7 +3,7 @@ param(
   [int]$FrontendPort = 3000
 )
 
-$RepoRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+$RepoRoot = Split-Path -Parent $PSCommandPath
 $backendDir = Join-Path $RepoRoot "backend"
 $frontendDir = Join-Path $RepoRoot "frontend"
 
