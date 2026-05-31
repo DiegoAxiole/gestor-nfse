@@ -38,3 +38,6 @@ backend/data/__init__.py
 
 # DLLs não utilizadas
 backend/dll/Unimake.UniDANFe/
+
+# Ferramentas portáteis baixadas pelo install.bat
+.tools/

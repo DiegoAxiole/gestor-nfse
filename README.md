@@ -4,23 +4,19 @@
 
 Gestão de Notas Fiscais de Serviço Eletrônica — frontend React + backend FastAPI com integração Unimake SEFAZ.
 
-## Setup automático (recomendado)
+## Instalação única (recomendado)
 
-Abra o PowerShell como administrador e execute:
+Abra o Explorer na pasta do projeto e **dê dois cliques em `install.bat`**. Ou pelo terminal:
 
-```powershell
-.\setup.ps1
+```cmd
+.\install.bat
 ```
 
-O script detecta e instala tudo que precisa (Node.js, Python, dependências), exibindo o progresso de cada etapa. Zero dor de cabeça.
+O script detecta o que falta, baixa tudo (Node.js portátil, Python 3.12 via uv, dependências), compila o frontend, inicia os servidores e abre o navegador. Um clique, zero configuração, zero admin necessário.
 
-Depois da instalação, para iniciar o projeto:
+## Setup manual (etapas separadas)
 
-```powershell
-.\start.ps1
-```
-
-Isso sobe o backend e o frontend automaticamente e abre o navegador.
+Para instalar sem iniciar os servidores, use `setup.bat`; para iniciar depois, use `start.bat`.
 
 ## Setup manual
 
