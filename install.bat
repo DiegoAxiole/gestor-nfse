@@ -171,9 +171,15 @@ echo.
 echo Iniciando servidores...
 echo.
 
-start "Backend" /D "%BACKEND%" cmd /c "title Backend NFSe & uv run uvicorn main:app --host 127.0.0.1 --port 8001"
+set UV_PATH=%UV_BIN%\uv.exe
+set NODE_EXE=%NODE_DIR%\node.exe
+set NPM_CMD=%NODE_DIR%\npm.cmd
+if not exist "!UV_PATH!" set UV_PATH=uv.exe
+if not exist "!NPM_CMD!" set NPM_CMD=npm.cmd
 
-start "Frontend" /D "%FRONTEND%" cmd /c "title Frontend NFSe & npm run dev"
+start "Backend" cmd /c "PATH=%UV_BIN%;%NODE_DIR%;%PATH% & cd /d "%BACKEND%" & title Backend NFSe & "%UV_PATH%" run uvicorn main:app --host 127.0.0.1 --port 8001"
+
+start "Frontend" cmd /c "PATH=%UV_BIN%;%NODE_DIR%;%PATH% & cd /d "%FRONTEND%" & title Frontend NFSe & "%NPM_CMD%" run dev"
 
 :: ======== 8. AGUARDAR SERVERS ========
 echo   Aguardando backend...
