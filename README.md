@@ -2,59 +2,83 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Gestão de Notas Fiscais de Serviço Eletrônica — frontend React + backend FastAPI com integração Unimake SEFAZ.
+Gestão de Notas Fiscais de Serviço Eletrônica — frontend React + backend Express (Node.js) com integração SEFAZ.
 
-## Instalação única (recomendado)
+Banco SQLite local (não precisa de servidor de banco). Portátil: não instala nada no sistema.
 
-Abra o Explorer na pasta do projeto e **dê dois cliques em `install.bat`**. Ou pelo terminal:
+---
 
-```cmd
+## Para usuários (instalação zero)
+
+1. **Baixe** o arquivo `gestor-nfse-vX.X.X.zip` da seção [Releases](https://github.com/seu-usuario/gestor-nfse/releases)
+2. **Extraia** em qualquer pasta
+3. **Execute** `start.bat` (dois cliques)
+4. O navegador abre em `http://localhost:8001`
+
+Pronto. O Node.js portátil já vem dentro do zip. Nada é instalado no sistema.
+
+---
+
+## Para desenvolvedores
+
+### Pré-requisitos
+
+- [Node.js 22+](https://nodejs.org)
+- Git
+
+### Setup
+
+```bash
+git clone <seu-repositorio>
+cd gestor-nfse
 .\install.bat
 ```
 
-O script detecta o que falta, baixa tudo (Node.js portátil, Python 3.12 via uv, dependências), compila o frontend, inicia os servidores e abre o navegador. Um clique, zero configuração, zero admin necessário.
+O script baixa o Node.js portátil (se não tiver), instala dependências, compila e inicia.
 
-## Setup manual (etapas separadas)
-
-Para instalar sem iniciar os servidores, use `setup.bat`; para iniciar depois, use `start.bat`.
-
-## Setup manual
-
-Pré-requisitos: [Node.js 20+](https://nodejs.org), Python 3.12+ com [uv](https://docs.astral.sh/uv/#installation).
+### Manual
 
 ```bash
 # Backend
 cd backend
-uv sync
-cp config.toml.example config.toml   # edite com seus dados
-uv run uvicorn main:app --host 127.0.0.1 --port 8001
+npm install
+npx prisma generate
+npm run dev          # http://localhost:8001
 
-# Frontend (outro terminal)
+# Frontend (terminal 2)
 cd frontend
 npm install
-npm run dev
+npm run dev          # http://localhost:3000 (proxy /api → :8001)
 ```
 
-- **App**: http://localhost:3000
+- **Dev**: http://localhost:3000 (hot-reload)
+- **Prod**: http://localhost:8001 (backend serve frontend buildado)
 - **API Docs**: http://localhost:8001/docs
 
-## Produção
+---
 
-```bash
-cd frontend
-npm run build         # gera backend/dist/
+## Publicar uma release
+
+```cmd
+scripts\build-release.bat
 ```
 
-O backend serve o frontend buildado em http://localhost:8001.
+Gera `releases\gestor-nfse-vX.X.X.zip` com tudo incluso (backend compilado, frontend compilado, Node.js portátil, dependências de produção). Basta subir o zip no GitHub Releases.
+
+---
 
 ## Estrutura
 
 ```
-frontend/          React + TypeScript + Vite
-backend/
-├── main.py        FastAPI app
-├── features/      Módulos (prestadores, distribuição, documentos, automação)
-├── shared/        Utilitários (config, database, DLL)
-├── dll/           Bibliotecas Unimake
-└── data/          SQLite (gerado automaticamente)
+gestor-nfse/
+├── backend/
+│   ├── src/           TypeScript (Express + Prisma + rotas)
+│   ├── dist/          Compilado + frontend buildado
+│   ├── prisma/        Schema do banco
+│   └── data/          SQLite (auto-criado na 1ª execução)
+├── frontend/          React + TypeScript + Vite
+├── scripts/           Utilitários (build-release.bat)
+├── .tools/            Node.js portátil (baixado pelo install.bat)
+├── start.bat          Iniciar servidor (modo produção)
+└── install.bat        Setup completo (dev)
 ```

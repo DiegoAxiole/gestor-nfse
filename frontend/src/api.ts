@@ -294,6 +294,25 @@ export async function buscarTask(taskId: string): Promise<TaskStatus> {
   return api.buscarTask(taskId)
 }
 
+export async function pollTask(taskId: string, intervalMs = 2000): Promise<TaskStatus> {
+  return new Promise((resolve, reject) => {
+    const poll = async () => {
+      try {
+        const task = await api.buscarTask(taskId)
+        if (task.status === "completed" || task.status === "error") {
+          clearInterval(handle)
+          resolve(task)
+        }
+      } catch (err: any) {
+        clearInterval(handle)
+        reject(err)
+      }
+    }
+    const handle = setInterval(poll, intervalMs)
+    poll()
+  })
+}
+
 export async function downloadZip(cnpj: string, inicio: string, fim: string): Promise<Blob> {
   const qs = new URLSearchParams({ cnpj, inicio, fim })
   return requestBlob(`/documentos/download-zip?${qs}`)

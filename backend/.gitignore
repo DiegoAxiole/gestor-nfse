@@ -1,25 +1,8 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.venv/
-venv/
-*.egg-info/
+node_modules/
+dist/
+*.tsbuildinfo
 
-# uv
-uv.exe
-
-# IDE
-.codegraph/
-.vscode/
-.idea/
-
-# Test cache
-.pytest_cache/
-tests/
-
-# Dados do usuário — versionar só o template
+# Dados do usuario
 config.toml
 data/*.sqlite*
 data/*.sqlite-shm
@@ -30,5 +13,15 @@ data/xmls/
 data/*.bin
 data/server.pid
 
+# IDE
+.vscode/
+.idea/
+.codegraph/
+
 # Certificados do cliente
 certificado/
+
+# Logs
+*.log
+
+/src/generated/prisma

@@ -1,43 +1,69 @@
 # AGENTS.md — Gestor NFSe
 
+NFSe manager: **Express (Node.js) backend** + **React frontend**. Prisma + SQLite.
+
+## Project structure
+
+```
+frontend/          React 19 + TypeScript + Vite 6 + Tailwind CSS v4
+backend/
+├── src/
+│   ├── index.ts        Express entrypoint
+│   ├── app.ts          Express app factory
+│   ├── config.ts       TOML config loader
+│   ├── validators.ts   CNPJ / chave de acesso validation
+│   ├── modules/        Route modules (prestadores, config, distribuicao, documentos, operacoes, automacao, tasks)
+│   └── shared/         Prisma client, error handler
+├── prisma/             Prisma schema + migrations
+├── data/               SQLite DB (auto-created on first run)
+├── dist/               TypeScript compile output (tsc)
+├── public/             Frontend build output (Vite)
+└── node_modules/
+```
+
 ## Commands
 
-| Layer | Command | Notes |
-|-------|---------|-------|
-| Backend | `cd backend && uv sync` | Python 3.12, deps in `pyproject.toml` |
-| Backend | `cd backend && uv run uvicorn main:app --host 127.0.0.1 --port 8001` | Global `app = create_app()` in `main.py` |
-| Backend | `cd backend && uv run pytest` | Optional `[dev]` dep — `tests/` is gitignored |
-| Frontend | `cd frontend && npm install && npm run dev` | Vite on port 3000, `/api` proxy → `http://localhost:8001` |
-| Frontend | `cd frontend && npm run lint` | `tsc --noEmit` only (no style linter) |
-| Frontend | `cd frontend && npm run build` | Outputs to `backend/dist/` (served by FastAPI) |
-| Root | `.\install.bat` **(recomendado)** | One-click: instala Node 22, uv, Python 3.12, deps, build, start servers, open browser |
-| Root | `.\setup.bat` / `.\setup.ps1` | Legacy: install deps only (no server start) |
-| Root | `.\start.bat` / `.\start.ps1` | Legacy: start servers only |
+| Context | Command |
+|---------|---------|
+| Backend deps | `npm install` (in `backend/`) |
+| Prisma generate | `npx prisma generate` (in `backend/`) |
+| Backend dev | `npm run dev` (runs `tsx watch src/index.ts`) |
+| Backend build | `npm run build` (runs `tsc`, outputs to `backend/dist/`) |
+| Backend prod | `npm run start` (`node dist/index.js`) |
+| Typecheck | `npm run typecheck` (runs `tsc --noEmit`) |
+| Frontend deps | `npm install` (in `frontend/`) |
+| Frontend dev | `npm run dev` (port 3000, proxies `/api` → `:8001`) |
+| Frontend build | `npm run build` (Vite, outputs to `backend/public/`) |
+| Frontend typecheck | `npm run lint` (runs `tsc --noEmit`) |
+| One-click install | `install.bat` (downloads portable Node, installs deps, builds, starts) |
+| Start server | `start.bat` (auto-runs npm install + build if needed) |
 
-No test suite is set up. Backend has `pytest` as optional `[dev]` dep; `tests/` is gitignored.
+## API
 
-## Architecture
+All routes under `/api/v1/`. Docs at `http://localhost:8001/docs` (auto-generated).
 
-- **Frontend**: React 19 + TypeScript + Vite 6 + Tailwind v4 (`@tailwindcss/vite`) in `frontend/`
-  - SPA: `frontend/src/main.tsx` → `App.tsx` → 6 pages in `frontend/src/pages/`
-  - `@/` path alias maps to `frontend/` (not `frontend/src/`)
-  - Components in `frontend/src/components/`, services in `frontend/src/services/`
-- **Backend**: Python/FastAPI in `backend/`, managed via `uv`
-  - Feature modules under `backend/features/`: `prestadores/`, `distribuicao/`, `documentos/`, `automacao/`, `operacoes/`, `config/`
-  - Each feature: `routes.py` → `application.py` (use cases) → `infra.py` (repositories)
-  - Shared utilities in `backend/shared/`: `config.py`, `database.py`, `dll.py` (Unimake), `task_manager.py`, `http_log.py`, `validators.py`
-  - App factory `create_app()` in `main.py`; global singleton `app = create_app()` for uvicorn
-  - All API routes under prefix `/api/v1/`
-  - Background tasks use `threading.Thread` (not asyncio), poll via `GET /api/v1/tasks/{id}`
-- **Database**: SQLite at `backend/data/nfse.sqlite` (auto-created, auto-migrated). WAL mode + foreign keys ON.
-- **DLL bridge**: Unimake NFSe via `pythonnet` CLR — **Windows-only**. DLLs in `backend/dll/`.
+- **Prestadores**: CRUD at `/api/v1/prestadores` (multipart/form-data with PFX cert)
+- **Distribuição**: `POST /api/v1/distribuicao/consultar` (returns task_id for polling)
+- **Tasks**: `GET /api/v1/tasks/{task_id}` (poll background task status)
+- **Documentos**: `GET /api/v1/documentos`, `GET .../{chave}/xml|pdf`, `GET .../download-zip`
+- **Automação**: `POST /api/v1/automacao/agendar`, `GET/DELETE /.../agendamentos`, `GET /.../logs`
+- **Operações**: `GET /api/v1/operacoes`
+- **Config**: `GET/PUT /api/v1/config`
+- **Health**: `GET /health`
 
-## Conventions
+## Database
 
-- **Portuguese** for all business layer code (routes, use cases, repos, error messages). English for config/framework files.
-- `.gitattributes`: LF for source files, CRLF for `.bat`/`.ps1`, binary for `.dll`/`.db`/`.sqlite`.
-- `backend/config.toml` has placeholder values (no `.example` file exists) — edit in place.
-- `npm run lint` is type-check only (`tsc --noEmit`, `tsconfig.json` has `"noEmit": true`). No ESLint/Biome.
-- Frontend scripts `npm run stop` / `npm run restart` delegate to `.bat` files in `frontend/scripts/`.
-- `opencode.jsonc` configures `dbhub` MCP pointing at the SQLite database.
-- License: MIT.
+- SQLite via Prisma ORM
+- PFX certificates stored as BLOBs in `prestadores` table
+- Background tasks polled by frontend via `GET /tasks/{id}`
+
+## Key conventions
+
+- Routes use **dependency injection** via factory functions (`criarRouter*`) — receive `DatabaseManager` instance
+- CNPJ validation (14 digits) via `validators.ts`
+- `config.toml` is gitignored; no `.example` file
+- Frontend uses `@/` import alias → `frontend/`
+- LGPD (data privacy) masking in `frontend/src/utils.ts`
+- Certificate upload uses `multipart/form-data` (not JSON)
+- SEFAZ integration via `vendor/consulta-nfse-api-node`
+- No tests exist

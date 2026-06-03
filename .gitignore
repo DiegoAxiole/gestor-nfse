@@ -16,28 +16,23 @@ Thumbs.db
 data/state_store.db/
 data/stream_store/
 
-# Installer junk
-backend/dll/Unimake.UniDANFe/unins000.*
-backend/dll/Unimake.UniDANFe/Unimake_EXE/
-backend/dll/Unimake.UniDANFe/Register_UnimakeUniDANFe.bat
-backend/dll/Unimake.UniDANFe/*.pdb
-
 # Auto-generated metadata
 frontend/metadata.json
 frontend/docs/
 
 # Frontend build output (rebuilt by vite)
 backend/dist/
+backend/public/
+
+# Database SQLite (runtime)
+data/
 
 # Tooling config (opencode, AI Studio metadata)
 frontend/opencode.json
 frontend/.env.example
 
-# Empty init
-backend/data/__init__.py
-
-# DLLs não utilizadas
-backend/dll/Unimake.UniDANFe/
-
 # Ferramentas portáteis baixadas pelo install.bat
 .tools/
+
+# Builds de release
+releases/

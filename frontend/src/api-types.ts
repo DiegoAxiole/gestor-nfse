@@ -68,6 +68,13 @@ export interface AutomacaoLog {
   created_at: string | null
 }
 
+export interface ResultadoDistribuicaoTask {
+  status: string
+  documentos: number
+  ultimo_nsu: string
+  operacao_id: number
+}
+
 export interface TaskStatus {
   task_id: string
   tipo: "gerar_danfse" | "consultar_distribuicao"
@@ -76,7 +83,7 @@ export interface TaskStatus {
   status: "processing" | "completed" | "error"
   progresso: number
   mensagem: string
-  resultado: ResultadoDanfse | null
+  resultado: ResultadoDistribuicaoTask | ResultadoDanfse | null
   mensagem_erro: string | null
   criado_em: string
   atualizado_em: string

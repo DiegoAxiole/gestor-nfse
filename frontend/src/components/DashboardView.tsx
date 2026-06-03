@@ -116,6 +116,41 @@ export default function DashboardView({
     return `${mins}m ${secs}s`;
   };
 
+  const syncOneCompany = async (emp: Empresa): Promise<{ ultimo_nsu: string; docsCount: number } | null> => {
+    const empCnpjClean = emp.cnpj.replace(/\D/g, "");
+    const { task_id } = await api.consultarDistribuicao(empCnpjClean);
+
+    setSyncLog(`Consultando SEFAZ para "${emp.razao_social}"... (task ${task_id.slice(0, 8)}…)`);
+    const task = await api.pollTask(task_id);
+
+    if (task.status === "error") {
+      throw new Error(task.mensagem_erro || "Erro desconhecido na consulta");
+    }
+
+    const docsData = await api.buscarDocumentosPaginated({ cnpj: empCnpjClean });
+    if (docsData.documentos.length > 0 && onAddDocuments) {
+      const parsedDocs: Documento[] = docsData.documentos.map(d => ({
+        chave_acesso: d.chave_acesso,
+        nsu: d.nsu,
+        numero_nota: d.numero_nota || "",
+        data_importacao: new Date().toISOString(),
+        data_emissao: d.data_emissao,
+        emissao_dh: d.emissao_dh,
+        valor_servicos: d.valor_servicos,
+        prestador_nome: d.prestador_nome,
+        prestador_cnpj: d.prestador_cnpj,
+        tomador_nome: d.tomador_nome,
+        tomador_cnpj: d.tomador_cnpj,
+        xml_nfse: d.xml_nfse,
+        tem_pdf: d.tem_pdf,
+      }))
+      onAddDocuments(parsedDocs)
+    }
+
+    const ultimoNsu = (task.resultado && "ultimo_nsu" in task.resultado) ? (task.resultado as any).ultimo_nsu : ""
+    return { ultimo_nsu: ultimoNsu, docsCount: docsData.total }
+  }
+
   // Perform single-company sync
   const handleSyncCompany = async (companyId: string) => {
     const emp = empresas.find(e => e.id === companyId);
@@ -140,51 +175,25 @@ export default function DashboardView({
       }
     }
 
-    // Start loading
     setSyncingCompanyId(companyId);
-    setSyncLog(`Efetuando handshake SOAP mútua-criptografada com a prefeitura para "${emp.razao_social}"...`);
+    setSyncLog(`Efetuando handshake SOAP para "${emp.razao_social}"...`);
 
     try {
-      setSyncLog(`Consultando SEFAZ via webservice para "${emp.razao_social}"...`);
-      const result: any = await api.consultarDistribuicao(empCnpjClean);
-      const docsFromApi: any[] = result?.lote_dfe || [];
-
-      if (docsFromApi.length > 0) {
-        const newDocs: Documento[] = docsFromApi.map((item: any) => {
-          return {
-            chave_acesso: item.chave_acesso,
-            nsu: item.nsu,
-            numero_nota: String(Math.floor(Math.random() * 200) + 700),
-            data_importacao: new Date().toISOString(),
-            data_emissao: new Date().toISOString().split("T")[0],
-            emissao_dh: new Date().toISOString(),
-            valor_servicos: 0,
-            prestador_nome: emp.razao_social,
-            prestador_cnpj: emp.cnpj,
-            tomador_nome: "",
-            tomador_cnpj: "",
-            xml_nfse: item.xml_nfse,
-            tem_pdf: false,
-          };
-        });
-
-        if (onAddDocuments) onAddDocuments(newDocs);
+      const result = await syncOneCompany(emp);
+      if (result && onAddOperation) {
+        const newOp: Operacao = {
+          id: "op_" + generateUUID(),
+          data: new Date().toISOString(),
+          tipo: "DISTRIBUICAO",
+          nsu_consultado: null,
+          ultimo_nsu: result.ultimo_nsu,
+          status: "SUCESSO",
+          xml_request: "",
+          xml_response: "",
+          lote_dfe_count: result.docsCount,
+        };
+        onAddOperation(newOp);
       }
-
-      const opId = "op_" + generateUUID();
-      const newOp: Operacao = {
-        id: opId,
-        data: new Date().toISOString(),
-        tipo: "DISTRIBUICAO",
-        nsu_consultado: null,
-        ultimo_nsu: result?.proximo_nsu || "",
-        status: result?.sucesso !== false ? "SUCESSO" : "ERRO",
-        xml_request: "",
-        xml_response: "",
-        lote_dfe_count: docsFromApi.length,
-      };
-
-      if (onAddOperation) onAddOperation(newOp);
     } catch (err: any) {
       alert(`Erro na consulta SEFAZ: ${err.message}`);
     }
@@ -195,7 +204,6 @@ export default function DashboardView({
 
   // Perform mass sync (sync all eligible clients in batch)
   const handleSyncAllCompanies = async () => {
-    // Filter companies that have met the 1h rule (backend handles certificate)
     const eligibleCompanies = empresas.filter(emp => {
       const empCnpjClean = emp.cnpj.replace(/\D/g, "");
       const empOps = ops.filter(op => {
@@ -207,7 +215,7 @@ export default function DashboardView({
 
       if (latestOp) {
         const elapsed = now.getTime() - new Date(latestOp.data).getTime();
-        if (elapsed < 3600000) return false; // Locked
+        if (elapsed < 3600000) return false;
       }
       return true;
     });
@@ -218,53 +226,26 @@ export default function DashboardView({
     }
 
     setSyncingAll(true);
-    setSyncLog(`Preparando barramento em lote para ${eligibleCompanies.length} empresa(s) elegíveis...`);
+    setSyncLog(`Preparando lote para ${eligibleCompanies.length} empresa(s)...`);
 
     for (let i = 0; i < eligibleCompanies.length; i++) {
       const emp = eligibleCompanies[i];
-      setSyncLog(`[${i + 1}/${eligibleCompanies.length}] Assinando XML e consultando webervice NFSe: "${emp.razao_social}"...`);
-
       try {
-        const empCnpjClean = emp.cnpj.replace(/\D/g, "");
-        const result: any = await api.consultarDistribuicao(empCnpjClean);
-        const docsFromApi: any[] = result?.lote_dfe || [];
-
-        if (docsFromApi.length > 0) {
-          const newDocs: Documento[] = docsFromApi.map((item: any) => {
-            return {
-              chave_acesso: item.chave_acesso,
-              nsu: item.nsu,
-              numero_nota: String(Math.floor(Math.random() * 200) + 700),
-            data_importacao: new Date().toISOString(),
-            data_emissao: new Date().toISOString().split("T")[0],
-            emissao_dh: new Date().toISOString(),
-            valor_servicos: 0,
-            prestador_nome: emp.razao_social,
-            prestador_cnpj: emp.cnpj,
-            tomador_nome: "",
-            tomador_cnpj: "",
-            xml_nfse: item.xml_nfse,
-            tem_pdf: false,
-            };
-          });
-
-          if (onAddDocuments) onAddDocuments(newDocs);
+        const result = await syncOneCompany(emp);
+        if (result && onAddOperation) {
+          const newOp: Operacao = {
+            id: "op_" + generateUUID(),
+            data: new Date().toISOString(),
+            tipo: "DISTRIBUICAO",
+            nsu_consultado: null,
+            ultimo_nsu: result.ultimo_nsu,
+            status: "SUCESSO",
+            xml_request: "",
+            xml_response: "",
+            lote_dfe_count: result.docsCount,
+          };
+          onAddOperation(newOp);
         }
-
-        const opId = "op_" + generateUUID();
-        const newOp: Operacao = {
-          id: opId,
-          data: new Date().toISOString(),
-          tipo: "DISTRIBUICAO",
-          nsu_consultado: null,
-          ultimo_nsu: result?.proximo_nsu || "",
-          status: result?.sucesso !== false ? "SUCESSO" : "ERRO",
-          xml_request: "",
-          xml_response: "",
-          lote_dfe_count: docsFromApi.length,
-        };
-
-        if (onAddOperation) onAddOperation(newOp);
       } catch (err: any) {
         console.error(`Erro ao consultar ${emp.razao_social}:`, err);
       }
