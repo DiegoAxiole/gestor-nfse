@@ -13,7 +13,7 @@ interface AuthState {
 interface AuthContextType {
   auth: AuthState | null
   login: (email: string, senha: string) => Promise<void>
-  cadastrar: (nome: string, slug: string, email: string, senha: string) => Promise<void>
+  cadastrar: (tipo: string, documento: string, nome: string, email: string, senha: string) => Promise<void>
   logout: () => void
 }
 
@@ -57,11 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate('/')
   }
 
-  const cadastrar = async (nome: string, slug: string, email: string, senha: string) => {
+  const cadastrar = async (tipo: string, documento: string, nome: string, email: string, senha: string) => {
     const res = await fetch(`${BASE}/auth/cadastrar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, slug, email, senha }),
+      body: JSON.stringify({ tipo, documento, nome, email, senha }),
     })
     if (!res.ok) {
       const body = await res.json().catch(() => ({ detail: 'Erro no cadastro' }))

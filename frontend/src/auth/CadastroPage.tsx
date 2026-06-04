@@ -5,8 +5,10 @@ import { AlertCircle } from 'lucide-react'
 
 export default function CadastroPage() {
   const { cadastrar } = useAuth()
+  const [tipo, setTipo] = useState('pj')
+  const [documento, setDocumento] = useState('')
   const [nome, setNome] = useState('')
-  const [slug, setSlug] = useState('')
+  const [nomeFantasia, setNomeFantasia] = useState('')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [error, setError] = useState('')
@@ -17,7 +19,7 @@ export default function CadastroPage() {
     setError('')
     setLoading(true)
     try {
-      await cadastrar(nome, slug, email, senha)
+      await cadastrar(tipo, documento.replace(/\D/g, ''), nome, email, senha)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -45,15 +47,42 @@ export default function CadastroPage() {
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Nome do Tenant</label>
-            <input type="text" value={nome} onChange={e => setNome(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="Minha Empresa" required />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTipo('pj')}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${tipo === 'pj' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+            >PJ</button>
+            <button
+              type="button"
+              onClick={() => setTipo('pf')}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${tipo === 'pf' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+            >PF</button>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Identificador</label>
-            <input type="text" value={slug} onChange={e => setSlug(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="minha-empresa" required />
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{tipo === 'pj' ? 'CNPJ' : 'CPF'}</label>
+            <input
+              type="text"
+              value={documento}
+              onChange={e => setDocumento(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              placeholder={tipo === 'pj' ? '00.000.000/0001-00' : '000.000.000-00'}
+              required
+            />
           </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{tipo === 'pj' ? 'Razão Social' : 'Nome Completo'}</label>
+            <input type="text" value={nome} onChange={e => setNome(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder={tipo === 'pj' ? 'Minha Empresa Ltda' : 'Seu Nome'} required />
+          </div>
+
+          {tipo === 'pj' && (
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Nome Fantasia (opcional)</label>
+              <input type="text" value={nomeFantasia} onChange={e => setNomeFantasia(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="Nome Fantasia" />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Email</label>

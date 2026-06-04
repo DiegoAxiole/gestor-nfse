@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { LayoutDashboard, Printer, History, FileCode2, Settings2, Menu, X, ShieldCheck, AlertCircle, FolderDown, LogOut } from 'lucide-react'
+import { LayoutDashboard, Printer, History, FileCode2, Settings2, Menu, X, ShieldCheck, AlertCircle, FolderDown, LogOut, User } from 'lucide-react'
 import type { Documento, Operacao, ConfigToml, Empresa } from '../types'
 import * as api from '../api'
 import { formatCurrency } from '../utils'
@@ -138,7 +138,7 @@ export default function ProtectedLayout() {
     const routeMap: Record<string, string> = {
       dashboard: '/', documentos: '/documentos', empresas: '/empresas',
       download_lote: '/download-lote', gerar: '/gerar-danfe',
-      historico: '/historico', configuracoes: '/configuracoes',
+      historico: '/historico', configuracoes: '/configuracoes', perfil: '/perfil',
     }
     navigate(routeMap[tab] || '/')
     setMobileMenuOpen(false)
@@ -155,6 +155,7 @@ export default function ProtectedLayout() {
     { id: 'gerar', label: 'Gerar DANFSe', path: '/gerar-danfe', icon: Printer },
     { id: 'historico', label: 'Historico NSU', path: '/historico', icon: History },
     { id: 'configuracoes', label: 'Configuracao Toml', path: '/configuracoes', icon: Settings2 },
+    { id: 'perfil', label: 'Perfil', path: '/perfil', icon: User },
   ]
 
   const outletContext = {
