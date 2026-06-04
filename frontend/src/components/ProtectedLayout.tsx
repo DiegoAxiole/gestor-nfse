@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { LayoutDashboard, Printer, History, FileCode2, Settings2, Menu, X, ShieldCheck, AlertCircle, FolderDown, LogOut, User, Users } from 'lucide-react'
-import type { Documento, Operacao, ConfigToml, Empresa } from '../types'
+import { LayoutDashboard, Printer, History, FileCode2, Settings2, Menu, X, ShieldCheck, AlertCircle, FolderDown, LogOut, User, Users, CreditCard } from 'lucide-react'
+import type { Documento, Operacao, ConfigToml, Empresa, Subscription } from '../types'
 import * as api from '../api'
 import { formatCurrency } from '../utils'
 import { useAuth } from '../auth/AuthContext'
@@ -36,6 +36,7 @@ export default function ProtectedLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedChave, setSelectedChave] = useState<string>('')
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [state, setState] = useState<{
     docs: Documento[]; ops: Operacao[]; config: ConfigToml; empresas: Empresa[]; activeEmpresaId: string
   }>({
@@ -49,13 +50,12 @@ export default function ProtectedLayout() {
   }
 
   useEffect(() => {
+    api.buscarSubscription().then(r => setSubscription(r.data)).catch(() => {})
     Promise.all([
       api.fetchEmpresas(), api.fetchDocumentos(), api.fetchOperacoes(), api.fetchConfig(),
-    ]).then(([empresas, docs, ops, config]) => {
+    ].map(p => p.catch(() => []))).then(([empresas, docs, ops, config]) => {
       setState(prev => ({ ...prev, empresas, docs, ops, config }))
-    }).catch(err => {
-      triggerToast(`Erro ao carregar dados: ${err.message}`, 'error')
-    })
+    }).catch(() => {})
   }, [])
 
   const handleSetActiveEmpresa = (id: string) => {
@@ -138,7 +138,7 @@ export default function ProtectedLayout() {
     const routeMap: Record<string, string> = {
       dashboard: '/', documentos: '/documentos', empresas: '/empresas',
       download_lote: '/download-lote', gerar: '/gerar-danfe',
-      historico: '/historico', usuarios: '/usuarios', configuracoes: '/configuracoes', perfil: '/perfil',
+      historico: '/historico', usuarios: '/usuarios', assinatura: '/assinatura', configuracoes: '/configuracoes', perfil: '/perfil',
     }
     navigate(routeMap[tab] || '/')
     setMobileMenuOpen(false)
@@ -155,6 +155,7 @@ export default function ProtectedLayout() {
     { id: 'gerar', label: 'Gerar DANFSe', path: '/gerar-danfe', icon: Printer },
     { id: 'historico', label: 'Historico NSU', path: '/historico', icon: History },
     ...(isAdmin ? [{ id: 'usuarios' as const, label: 'Usuários', path: '/usuarios' as const, icon: Users }] : []),
+    { id: 'assinatura', label: 'Assinatura', path: '/assinatura', icon: CreditCard },
     { id: 'configuracoes', label: 'Configuracao Toml', path: '/configuracoes', icon: Settings2 },
     { id: 'perfil', label: 'Perfil', path: '/perfil', icon: User },
   ]
@@ -279,6 +280,24 @@ export default function ProtectedLayout() {
         {/* MAIN CONTENT */}
         <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto pt-20 lg:pt-8">
           <div className="max-w-7xl mx-auto">
+            {subscription?.status === 'trialing' && subscription.diasRestantes <= 7 && subscription.diasRestantes > 0 && (
+              <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2 text-amber-400 text-sm">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                Seu trial expira em <strong>{subscription.diasRestantes}</strong> {subscription.diasRestantes === 1 ? 'dia' : 'dias'}. <NavLink to="/assinatura" className="underline font-bold ml-1">Fazer upgrade</NavLink>
+              </div>
+            )}
+            {subscription?.status === 'canceled' && (
+              <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-center gap-2 text-rose-400 text-sm">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                Assinatura cancelada. <NavLink to="/assinatura" className="underline font-bold ml-1">Ver detalhes</NavLink>
+              </div>
+            )}
+            {subscription && (subscription.status === 'active' || subscription.status === 'trialing') && subscription.diasRestantes <= 0 && (
+              <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-center gap-2 text-rose-400 text-sm">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                Assinatura expirada. <NavLink to="/assinatura" className="underline font-bold ml-1">Renovar</NavLink>
+              </div>
+            )}
             <Outlet context={outletContext} />
           </div>
         </main>

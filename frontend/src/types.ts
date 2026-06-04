@@ -77,6 +77,22 @@ export interface CadastroData {
   senha: string
 }
 
+export interface Subscription {
+  id: number
+  tenant_id: number
+  uuid: string
+  plano: string
+  status: string
+  trial_fim: string
+  periodo_fim: string
+  gateway_customer_id: string | null
+  gateway_subscription_id: string | null
+  cancelado_em: string | null
+  created_at: string
+  updated_at: string
+  diasRestantes: number
+}
+
 export interface UsuarioPerfil {
   id: number
   email: string

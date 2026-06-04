@@ -7,7 +7,7 @@ import type {
   HealthCheck,
 } from './api-types'
 
-import type { Empresa, Operacao, ConfigToml, Documento as RichDocumento, TenantProfile, LoginResponse, CadastroResponse, CadastroData, UsuarioPerfil } from './types'
+import type { Empresa, Operacao, ConfigToml, Documento as RichDocumento, TenantProfile, LoginResponse, CadastroResponse, CadastroData, UsuarioPerfil, Subscription } from './types'
 import { parseNfseXml } from './services/xml-parser'
 
 export const BASE = '/api/v1'
@@ -426,6 +426,21 @@ export async function alterarPapelUsuario(usuarioId: number, papel: string): Pro
 
 export async function removerUsuario(usuarioId: number): Promise<void> {
   await requestJson<void>(`/usuarios/${usuarioId}`, { method: 'DELETE' })
+}
+
+export async function buscarSubscription(): Promise<{ data: Subscription }> {
+  return requestJson<{ data: Subscription }>('/subscription')
+}
+
+export async function cancelarSubscription(): Promise<{ data: Subscription }> {
+  return requestJson<{ data: Subscription }>('/subscription/cancelar', { method: 'POST' })
+}
+
+export async function upgradeSubscription(plano: string, periodo_fim: string): Promise<{ data: Subscription }> {
+  return requestJson<{ data: Subscription }>('/subscription/upgrade', {
+    method: 'POST',
+    body: JSON.stringify({ plano, periodo_fim }),
+  })
 }
 
 function toFormData(data: Empresa): FormData {

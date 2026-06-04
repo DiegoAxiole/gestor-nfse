@@ -1,23 +1,27 @@
 import { db } from './db/db.js'
-import { tenants, tenantUsuarios } from './db/schema.js'
-import { eq } from 'drizzle-orm'
+import { tenants, tenantUsuarios, subscriptions } from './db/schema.js'
+import { eq, sql } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 
 async function seed() {
-  const rows = await db.select().from(tenants).where(eq(tenants.nome, 'Administrador')).limit(1)
-  const existing = rows[0]
-  if (existing) {
-    console.log('Seed ja executado. Tenant admin existe.')
-    return
-  }
+  await sql`TRUNCATE subscriptions, tenant_usuarios, tenants RESTART IDENTITY CASCADE`
 
-  const tenantRows = await db.insert(tenants).values({
+  const trialFim = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+
+  const [tenant] = await db.insert(tenants).values({
     nome: 'Administrador',
     documento: '00000000000000',
     email_contato: 'admin@gestornfse.com',
     tipo: 'pj',
   }).returning()
-  const tenant = tenantRows[0]
+
+  await db.insert(subscriptions).values({
+    tenant_id: tenant.id,
+    plano: 'trial',
+    status: 'trialing',
+    trial_fim: trialFim,
+    periodo_fim: trialFim,
+  })
 
   const senha_hash = await bcrypt.hash('admin123', 10)
   await db.insert(tenantUsuarios).values({

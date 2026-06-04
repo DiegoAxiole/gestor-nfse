@@ -17,6 +17,8 @@ import { criarRouterTasks } from './modules/tasks/tasks.routes.js'
 import { criarRouterAuth } from './modules/auth/auth.routes.js'
 import { criarRouterTenant } from './modules/auth/tenant.routes.js'
 import { criarRouterUsuarios } from './modules/usuarios/usuario.routes.js'
+import { criarRouterSubscription } from './modules/subscription/subscription.routes.js'
+import { subscriptionMiddleware } from './modules/subscription/subscription.middleware.js'
 import { errorHandler } from './shared/error-handler.js'
 import { authMiddleware } from './shared/auth.middleware.js'
 
@@ -93,15 +95,23 @@ export async function createApp() {
     res.json({ status: 'ok', version: '0.5.0' })
   })
 
-  router.use('/api/v1/prestadores', authMiddleware, criarRouterPrestadores(config.codigo_municipio))
-  router.use('/api/v1/config', authMiddleware, criarRouterConfig())
-  router.use('/api/v1/distribuicao', authMiddleware, criarRouterDistribuicao(config.codigo_municipio))
-  router.use('/api/v1/documentos', authMiddleware, criarRouterDocumentos())
-  router.use('/api/v1/operacoes', authMiddleware, criarRouterOperacoes())
+  router.use((req, res, next) => {
+    const publicPaths = ['/health', '/api/v1/auth']
+    if (publicPaths.some(p => req.path.startsWith(p))) { next(); return }
+    authMiddleware(req, res, next)
+  })
+  router.use(subscriptionMiddleware)
+
   router.use('/api/v1/auth', criarRouterAuth())
-  router.use('/api/v1/tenant', authMiddleware, criarRouterTenant())
+  router.use('/api/v1/subscription', criarRouterSubscription())
+  router.use('/api/v1/prestadores', criarRouterPrestadores(config.codigo_municipio))
+  router.use('/api/v1/config', criarRouterConfig())
+  router.use('/api/v1/distribuicao', criarRouterDistribuicao(config.codigo_municipio))
+  router.use('/api/v1/documentos', criarRouterDocumentos())
+  router.use('/api/v1/operacoes', criarRouterOperacoes())
+  router.use('/api/v1/tenant', criarRouterTenant())
   router.use('/api/v1/usuarios', criarRouterUsuarios())
-  router.use('/api/v1/tasks', authMiddleware, criarRouterTasks())
+  router.use('/api/v1/tasks', criarRouterTasks())
 
   app.use(router)
 

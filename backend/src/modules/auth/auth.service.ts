@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { db } from '../../db/db.js'
-import { tenants, tenantUsuarios } from '../../db/schema.js'
+import { tenants, tenantUsuarios, subscriptions } from '../../db/schema.js'
 import { eq } from 'drizzle-orm'
 import { ValidationError, ConflictError } from '../../shared/errors.js'
 import { carregarConfig } from '../../config.js'
@@ -60,8 +60,17 @@ export const authService = {
       papel: 'admin',
     }).returning({ id: tenantUsuarios.id, papel: tenantUsuarios.papel })
 
+    const trialFim = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    await db.insert(subscriptions).values({
+      tenant_id: novoTenant.id,
+      plano: 'trial',
+      status: 'trialing',
+      trial_fim: trialFim,
+      periodo_fim: trialFim,
+    })
+
     const token = jwt.sign(
-      { tenantId: novoTenant.id, usuarioId: novoUsuario.id, email: data.email, papel: novoUsuario.papel, primeiroAcesso: true },
+      { tenantId: novoTenant.id, usuarioId: novoUsuario.id, email: data.email, papel: novoUsuario.papel, primeiroAcesso: true, subscriptionStatus: 'trialing' },
       jwtSecret,
       { expiresIn: '24h' },
     )

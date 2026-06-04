@@ -121,6 +121,21 @@ export const agendamentos = pgTable('agendamentos', {
   created_at: timestamp('created_at').defaultNow().notNull(),
 })
 
+export const subscriptions = pgTable('subscriptions', {
+  id: serial('id').primaryKey(),
+  tenant_id: integer('tenant_id').notNull().references(() => tenants.id).unique(),
+  uuid: uuid('uuid').notNull().unique().defaultRandom(),
+  plano: varchar('plano', { length: 50 }).notNull().default('trial'),
+  status: varchar('status', { length: 50 }).notNull().default('trialing'),
+  trial_fim: timestamp('trial_fim').notNull(),
+  periodo_fim: timestamp('periodo_fim').notNull(),
+  gateway_customer_id: varchar('gateway_customer_id', { length: 100 }),
+  gateway_subscription_id: varchar('gateway_subscription_id', { length: 100 }),
+  cancelado_em: timestamp('cancelado_em'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+})
+
 export const automacaoLogs = pgTable('automacao_logs', {
   id: serial('id').primaryKey(),
   tenant_id: integer('tenant_id').notNull().references(() => tenants.id),
