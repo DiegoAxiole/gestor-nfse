@@ -21,6 +21,19 @@ function toResponse(p: { cnpj: string; razao_social: string; ambiente: string; c
   }
 }
 
+function extrairCertValidade(pfx: Buffer, senha: string): string {
+  const tempPath = join(tmpdir(), `_temp_cert_${Date.now()}.pfx`)
+  writeFileSync(tempPath, pfx)
+  try {
+    const cert = new CertificadoA1(tempPath, senha)
+    const info = cert.info
+    cert.limpar()
+    return info.validoAte ? info.validoAte.split('T')[0] : ''
+  } finally {
+    rmSync(tempPath, { force: true })
+  }
+}
+
 export const prestadorService = {
   async listar(codigoMunicipio: number, tenantId: number): Promise<PrestadorResponse[]> {
     const prestadores = await prestadorRepository.listar(tenantId)
@@ -36,6 +49,11 @@ export const prestadorService = {
   ): Promise<PrestadorResponse> {
     if (!validarCnpj(data.cnpj)) throw new ValidationError('CNPJ invalido: deve ter 14 digitos')
 
+    let valCert = ''
+    if (certificadoPfx && data.certificado_senha) {
+      valCert = extrairCertValidade(certificadoPfx, data.certificado_senha)
+    }
+
     const p = await prestadorRepository.criar({
       cnpj: data.cnpj,
       tenant_id: tenantId,
@@ -44,6 +62,7 @@ export const prestadorService = {
       certificado_pfx: certificadoPfx ?? undefined,
       certificado_senha: data.certificado_senha,
       certificado_nome: certificadoNome,
+      certificado_validade: valCert,
     })
     return toResponse(p, codigoMunicipio)
   },
@@ -65,12 +84,15 @@ export const prestadorService = {
     const existente = await prestadorRepository.buscar(cnpj, tenantId!)
     if (!existente) throw new NotFoundError('Prestador', cnpj)
 
-    const updateData: Partial<{ razao_social: string; ambiente: string; certificado_pfx: Buffer; certificado_senha: string; certificado_nome: string }> = {}
+    const updateData: Partial<{ razao_social: string; ambiente: string; certificado_pfx: Buffer; certificado_senha: string; certificado_nome: string; certificado_validade: string }> = {}
     if (data.razao_social) updateData.razao_social = data.razao_social
     if (data.ambiente) updateData.ambiente = data.ambiente
     if (certificadoPfx) {
       updateData.certificado_pfx = certificadoPfx
       updateData.certificado_nome = certificadoNome || ''
+      if (data.certificado_senha) {
+        updateData.certificado_validade = extrairCertValidade(certificadoPfx, data.certificado_senha)
+      }
     }
     if (data.certificado_senha) updateData.certificado_senha = data.certificado_senha
 

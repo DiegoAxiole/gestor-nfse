@@ -41,6 +41,7 @@ export const prestadorRepository = {
     certificado_pfx?: Buffer
     certificado_senha: string
     certificado_nome: string
+    certificado_validade?: string
   }) {
     const rows = await db.insert(prestadores).values(data).returning({
       cnpj: prestadores.cnpj,
@@ -55,7 +56,7 @@ export const prestadorRepository = {
   async atualizar(
     cnpj: string,
     tenantId: number,
-    data: Partial<Pick<PrestadorRow, 'razao_social' | 'ambiente' | 'certificado_pfx' | 'certificado_senha' | 'certificado_nome'>>
+    data: Partial<Pick<PrestadorRow, 'razao_social' | 'ambiente' | 'certificado_pfx' | 'certificado_senha' | 'certificado_nome' | 'certificado_validade'>>
   ) {
     const rows = await db.update(prestadores)
       .set(data)
