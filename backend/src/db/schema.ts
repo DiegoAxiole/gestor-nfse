@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, timestamp, boolean, customType, primaryKey } from 'drizzle-orm/pg-core'
+import { pgTable, serial, varchar, text, integer, timestamp, boolean, customType, primaryKey, uuid } from 'drizzle-orm/pg-core'
 
 export const bytea = customType<{ data: Buffer }>({
   dataType() {
@@ -8,7 +8,7 @@ export const bytea = customType<{ data: Buffer }>({
 
 export const tenants = pgTable('tenants', {
   id: serial('id').primaryKey(),
-  uuid: varchar('uuid', { length: 36 }).notNull().unique().defaultRandom(),
+  uuid: uuid('uuid').notNull().unique().defaultRandom(),
   tipo: varchar('tipo', { length: 2 }).notNull().default('pj'),
   documento: varchar('documento', { length: 20 }).notNull().default('').unique(),
   nome: varchar('nome', { length: 255 }).notNull(),
