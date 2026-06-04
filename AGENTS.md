@@ -1,6 +1,6 @@
 # AGENTS.md — Gestor NFSe
 
-NFSe manager: **Express (Node.js) backend** + **React frontend**. Prisma + SQLite.
+NFSe manager: **Express (Node.js) backend** + **React frontend**. Drizzle ORM + PostgreSQL.
 
 ## Project structure
 
@@ -10,14 +10,16 @@ backend/
 ├── src/
 │   ├── index.ts        Express entrypoint
 │   ├── app.ts          Express app factory
-│   ├── config.ts       TOML config loader
+│   ├── config.ts       Env-based config
 │   ├── validators.ts   CNPJ / chave de acesso validation
-│   ├── modules/        Route modules (prestadores, config, distribuicao, documentos, operacoes, automacao, tasks)
-│   └── shared/         Prisma client, error handler
-├── prisma/             Prisma schema + migrations
+│   ├── modules/        Route modules (prestadores, config, auth, distribuicao, documentos, operacoes, automacao, tasks)
+│   ├── shared/         Auth middleware, error handler
+│   ├── db/             Drizzle schema + DB client
+│   └── seed.ts         Initial tenant + admin user
 ├── data/               SQLite DB (auto-created on first run)
 ├── dist/               TypeScript compile output (tsc)
 ├── public/             Frontend build output (Vite)
+├── render.yaml         Render deploy config
 └── node_modules/
 ```
 
@@ -26,7 +28,10 @@ backend/
 | Context | Command |
 |---------|---------|
 | Backend deps | `npm install` (in `backend/`) |
-| Prisma generate | `npx prisma generate` (in `backend/`) |
+| DB generate | `npm run db:generate` (generates Drizzle migration) |
+| DB migrate | `npm run db:migrate` (applies migration) |
+| DB push | `npm run db:push` (syncs schema directly) |
+| Seed | `npm run seed` (creates initial admin tenant) |
 | Backend dev | `npm run dev` (runs `tsx watch src/index.ts`) |
 | Backend build | `npm run build` (runs `tsc`, outputs to `backend/dist/`) |
 | Backend prod | `npm run start` (`node dist/index.js`) |
@@ -42,6 +47,7 @@ backend/
 
 All routes under `/api/v1/`. Docs at `http://localhost:8001/docs` (auto-generated).
 
+- **Auth**: `POST /api/v1/auth/login`, `POST /api/v1/auth/cadastrar`
 - **Prestadores**: CRUD at `/api/v1/prestadores` (multipart/form-data with PFX cert)
 - **Distribuição**: `POST /api/v1/distribuicao/consultar` (returns task_id for polling)
 - **Tasks**: `GET /api/v1/tasks/{task_id}` (poll background task status)
@@ -53,13 +59,16 @@ All routes under `/api/v1/`. Docs at `http://localhost:8001/docs` (auto-generate
 
 ## Database
 
-- SQLite via Prisma ORM
-- PFX certificates stored as BLOBs in `prestadores` table
+- PostgreSQL via Drizzle ORM on Supabase
+- Multi-tenant: all tables scoped by `tenant_id`
+- Auth: bcrypt + JWT (self-managed, not Supabase Auth)
+- PFX certificates stored as bytea in `prestadores` table
 - Background tasks polled by frontend via `GET /tasks/{id}`
 
 ## Key conventions
 
 - Routes use **dependency injection** via factory functions (`criarRouter*`) — receive `DatabaseManager` instance
+- **Auth required** for all routes except `/api/v1/auth/*` and `/health` (JWT middleware)
 - CNPJ validation (14 digits) via `validators.ts`
 - `config.toml` is gitignored; no `.example` file
 - Frontend uses `@/` import alias → `frontend/`

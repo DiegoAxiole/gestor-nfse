@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: gestor-nfse
+    runtime: node
+    region: oregon
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && node dist/index.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AMBIENTE
+        value: Homologacao
+      - key: CODIGO_MUNICIPIO
+        value: "1001058"
