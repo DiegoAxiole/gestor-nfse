@@ -3,8 +3,9 @@ import jwt from 'jsonwebtoken'
 import { db } from '../../db/db.js'
 import { tenants, tenantUsuarios } from '../../db/schema.js'
 import { eq } from 'drizzle-orm'
-import { ConflictError } from '../../shared/errors.js'
+import { ValidationError, ConflictError } from '../../shared/errors.js'
 import { carregarConfig } from '../../config.js'
+import { cpf, cnpj } from 'cpf-cnpj-validator'
 
 const { jwtSecret } = carregarConfig()
 
@@ -32,6 +33,10 @@ export const authService = {
     senha: string
   }) {
     const documentoLimpo = data.documento.replace(/\D/g, '')
+
+    if (data.tipo === 'pj' && !cnpj.isValid(documentoLimpo)) throw new ValidationError('CNPJ inválido')
+    if (data.tipo === 'pf' && !cpf.isValid(documentoLimpo)) throw new ValidationError('CPF inválido')
+
     const docExistente = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.documento, documentoLimpo)).limit(1)
     if (docExistente.length > 0) throw new ConflictError('CNPJ/CPF já cadastrado')
 
@@ -47,14 +52,14 @@ export const authService = {
       email_contato: data.email,
     }).returning({ id: tenants.id, uuid: tenants.uuid, tipo: tenants.tipo, documento: tenants.documento, nome: tenants.nome })
 
-    await db.insert(tenantUsuarios).values({
+    const [novoUsuario] = await db.insert(tenantUsuarios).values({
       tenant_id: novoTenant.id,
       email: data.email,
       senha_hash: hash,
-    })
+    }).returning({ id: tenantUsuarios.id })
 
     const token = jwt.sign(
-      { tenantId: novoTenant.id, email: data.email },
+      { tenantId: novoTenant.id, usuarioId: novoUsuario.id, email: data.email, primeiroAcesso: true },
       jwtSecret,
       { expiresIn: '24h' },
     )

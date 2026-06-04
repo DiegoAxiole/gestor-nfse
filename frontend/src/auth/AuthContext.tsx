@@ -19,10 +19,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-function decodePayload(token: string): { tenantId: number; usuarioId: number; email: string } | null {
+function decodePayload(token: string): { tenantId: number; usuarioId: number; email: string; primeiroAcesso?: boolean } | null {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
-    return { tenantId: payload.tenantId, usuarioId: payload.usuarioId, email: payload.email }
+    return { tenantId: payload.tenantId, usuarioId: payload.usuarioId, email: payload.email, primeiroAcesso: payload.primeiroAcesso }
   } catch {
     return null
   }
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const authData = { token: data.token, ...payload }
     localStorage.setItem('token', data.token)
     setAuth(authData)
-    navigate('/')
+    navigate(payload.primeiroAcesso ? '/perfil' : '/')
   }
 
   const logout = () => {
