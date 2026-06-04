@@ -14,19 +14,19 @@ declare global {
 }
 
 const schemaAtualizarTenant = z.object({
-  nome_fantasia: z.string().max(255).optional(),
-  inscricao_estadual: z.string().max(20).optional(),
+  nome_fantasia: z.string().max(255).optional().nullable(),
+  inscricao_estadual: z.string().max(20).optional().nullable(),
   email_contato: z.string().email().min(1).optional(),
   whatsapp: z.boolean().optional(),
-  telefone_celular: z.string().max(20).optional(),
-  telefone_fixo: z.string().max(20).optional(),
-  cep: z.string().max(8).optional(),
-  logradouro: z.string().max(255).optional(),
-  numero: z.string().max(20).optional(),
-  complemento: z.string().max(100).optional(),
-  bairro: z.string().max(100).optional(),
-  cidade: z.string().max(100).optional(),
-  uf: z.string().length(2).optional(),
+  telefone_celular: z.string().max(20).optional().nullable(),
+  telefone_fixo: z.string().max(20).optional().nullable(),
+  cep: z.string().max(8).optional().nullable(),
+  logradouro: z.string().max(255).optional().nullable(),
+  numero: z.string().max(20).optional().nullable(),
+  complemento: z.string().max(100).optional().nullable(),
+  bairro: z.string().max(100).optional().nullable(),
+  cidade: z.string().max(100).optional().nullable(),
+  uf: z.string().length(2).optional().nullable(),
 })
 
 export function criarRouterTenant(): Router {
