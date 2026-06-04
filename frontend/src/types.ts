@@ -77,6 +77,14 @@ export interface CadastroData {
   senha: string
 }
 
+export interface UsuarioPerfil {
+  id: number
+  email: string
+  nome: string | null
+  papel: 'admin' | 'operador'
+  created_at: string
+}
+
 export interface ConfigToml {
   prestador: {
     cnpj: string;

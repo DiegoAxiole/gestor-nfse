@@ -7,7 +7,7 @@ import type {
   HealthCheck,
 } from './api-types'
 
-import type { Empresa, Operacao, ConfigToml, Documento as RichDocumento, TenantProfile, LoginResponse, CadastroResponse, CadastroData } from './types'
+import type { Empresa, Operacao, ConfigToml, Documento as RichDocumento, TenantProfile, LoginResponse, CadastroResponse, CadastroData, UsuarioPerfil } from './types'
 import { parseNfseXml } from './services/xml-parser'
 
 export const BASE = '/api/v1'
@@ -404,6 +404,28 @@ export async function atualizarTenant(data: Partial<TenantProfile>): Promise<{ d
     method: 'PUT',
     body: JSON.stringify(data),
   })
+}
+
+export async function listarUsuarios(): Promise<{ data: UsuarioPerfil[] }> {
+  return requestJson<{ data: UsuarioPerfil[] }>('/usuarios')
+}
+
+export async function criarUsuario(data: { email: string; nome?: string; papel: string; senha: string }): Promise<{ data: UsuarioPerfil }> {
+  return requestJson<{ data: UsuarioPerfil }>('/usuarios', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function alterarPapelUsuario(usuarioId: number, papel: string): Promise<{ data: UsuarioPerfil }> {
+  return requestJson<{ data: UsuarioPerfil }>(`/usuarios/${usuarioId}/papel`, {
+    method: 'PATCH',
+    body: JSON.stringify({ papel }),
+  })
+}
+
+export async function removerUsuario(usuarioId: number): Promise<void> {
+  await requestJson<void>(`/usuarios/${usuarioId}`, { method: 'DELETE' })
 }
 
 function toFormData(data: Empresa): FormData {

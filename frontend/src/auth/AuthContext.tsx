@@ -8,6 +8,7 @@ interface AuthState {
   tenantId: number
   usuarioId: number
   email: string
+  papel: string
 }
 
 interface AuthContextType {
@@ -15,14 +16,15 @@ interface AuthContextType {
   login: (email: string, senha: string) => Promise<void>
   cadastrar: (tipo: string, documento: string, nome: string, email: string, senha: string) => Promise<void>
   logout: () => void
+  isAdmin: boolean
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-function decodePayload(token: string): { tenantId: number; usuarioId: number; email: string; primeiroAcesso?: boolean } | null {
+function decodePayload(token: string): { tenantId: number; usuarioId: number; email: string; papel: string; primeiroAcesso?: boolean } | null {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
-    return { tenantId: payload.tenantId, usuarioId: payload.usuarioId, email: payload.email, primeiroAcesso: payload.primeiroAcesso }
+    return { tenantId: payload.tenantId, usuarioId: payload.usuarioId, email: payload.email, papel: payload.papel || 'operador', primeiroAcesso: payload.primeiroAcesso }
   } catch {
     return null
   }
@@ -82,8 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate('/login')
   }
 
+  const isAdmin = auth?.papel === 'admin'
+
   return (
-    <AuthContext.Provider value={{ auth, login, cadastrar, logout }}>
+    <AuthContext.Provider value={{ auth, login, cadastrar, logout, isAdmin }}>
       {children}
     </AuthContext.Provider>
   )

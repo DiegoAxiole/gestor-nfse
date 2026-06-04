@@ -11,6 +11,7 @@ import GerarDanfeView from './pages/GerarDanfeView'
 import HistoricoView from './pages/HistoricoView'
 import ConfiguracoesView from './pages/ConfiguracoesView'
 import PerfilView from './pages/PerfilView'
+import UsuariosView from './pages/UsuariosView'
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="gerar-danfe" element={<GerarDanfeView />} />
         <Route path="historico" element={<HistoricoView />} />
         <Route path="configuracoes" element={<ConfiguracoesView />} />
+        <Route path="usuarios" element={<UsuariosView />} />
         <Route path="perfil" element={<PerfilView />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { LayoutDashboard, Printer, History, FileCode2, Settings2, Menu, X, ShieldCheck, AlertCircle, FolderDown, LogOut, User } from 'lucide-react'
+import { LayoutDashboard, Printer, History, FileCode2, Settings2, Menu, X, ShieldCheck, AlertCircle, FolderDown, LogOut, User, Users } from 'lucide-react'
 import type { Documento, Operacao, ConfigToml, Empresa } from '../types'
 import * as api from '../api'
 import { formatCurrency } from '../utils'
@@ -31,7 +31,7 @@ export interface OutletContext {
 }
 
 export default function ProtectedLayout() {
-  const { logout } = useAuth()
+  const { logout, isAdmin } = useAuth()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedChave, setSelectedChave] = useState<string>('')
@@ -138,7 +138,7 @@ export default function ProtectedLayout() {
     const routeMap: Record<string, string> = {
       dashboard: '/', documentos: '/documentos', empresas: '/empresas',
       download_lote: '/download-lote', gerar: '/gerar-danfe',
-      historico: '/historico', configuracoes: '/configuracoes', perfil: '/perfil',
+      historico: '/historico', usuarios: '/usuarios', configuracoes: '/configuracoes', perfil: '/perfil',
     }
     navigate(routeMap[tab] || '/')
     setMobileMenuOpen(false)
@@ -154,6 +154,7 @@ export default function ProtectedLayout() {
     { id: 'download_lote', label: 'Exportar XMLs (ZIP)', path: '/download-lote', icon: FolderDown },
     { id: 'gerar', label: 'Gerar DANFSe', path: '/gerar-danfe', icon: Printer },
     { id: 'historico', label: 'Historico NSU', path: '/historico', icon: History },
+    ...(isAdmin ? [{ id: 'usuarios' as const, label: 'Usuários', path: '/usuarios' as const, icon: Users }] : []),
     { id: 'configuracoes', label: 'Configuracao Toml', path: '/configuracoes', icon: Settings2 },
     { id: 'perfil', label: 'Perfil', path: '/perfil', icon: User },
   ]
