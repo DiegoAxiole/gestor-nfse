@@ -1,4 +1,10 @@
-import { pgTable, serial, varchar, text, integer, timestamp, boolean, bytea } from 'drizzle-orm/pg-core'
+import { pgTable, serial, varchar, text, integer, timestamp, boolean, customType } from 'drizzle-orm/pg-core'
+
+export const bytea = customType<{ data: Buffer }>({
+  dataType() {
+    return 'bytea'
+  },
+})
 
 export const tenants = pgTable('tenants', {
   id: serial('id').primaryKey(),

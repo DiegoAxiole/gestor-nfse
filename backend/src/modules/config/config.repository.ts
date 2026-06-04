@@ -14,7 +14,7 @@ export const configRepository = {
     const existing = await db.select({ id: configuracoes.id }).from(configuracoes)
       .where(eq(configuracoes.tenant_id, tenantId))
       .limit(1)
-      .then(r => r[0])
+      .then((r: { id: number }[]) => r[0])
 
     if (existing) {
       await db.update(configuracoes)

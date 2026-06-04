@@ -24,7 +24,7 @@ function toResponse(p: { cnpj: string; razao_social: string; ambiente: string; c
 export const prestadorService = {
   async listar(codigoMunicipio: number, tenantId: number): Promise<PrestadorResponse[]> {
     const prestadores = await prestadorRepository.listar(tenantId)
-    return prestadores.map(p => toResponse(p, codigoMunicipio))
+    return prestadores.map((p: { cnpj: string; razao_social: string; ambiente: string; certificado_validade: string | null; certificado_nome: string | null }) => toResponse(p, codigoMunicipio))
   },
 
   async cadastrar(
