@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const BASE = '/api/v1'
