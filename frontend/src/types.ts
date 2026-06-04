@@ -38,6 +38,45 @@ export interface Empresa {
   codigo_municipio: string;
 }
 
+export interface TenantProfile {
+  uuid: string
+  tipo: string
+  documento: string
+  nome: string
+  nome_fantasia: string | null
+  inscricao_estadual: string | null
+  email_contato: string
+  telefone_celular: string | null
+  whatsapp: boolean
+  telefone_fixo: string | null
+  cep: string | null
+  logradouro: string | null
+  numero: string | null
+  complemento: string | null
+  bairro: string | null
+  cidade: string | null
+  uf: string | null
+}
+
+export interface LoginResponse {
+  token: string
+  usuario: { id: number; email: string }
+}
+
+export interface CadastroResponse {
+  token: string
+  tenant: { id: number; uuid: string; tipo: string; documento: string; nome: string }
+}
+
+export interface CadastroData {
+  tipo: string
+  documento: string
+  nome: string
+  nome_fantasia?: string
+  email: string
+  senha: string
+}
+
 export interface ConfigToml {
   prestador: {
     cnpj: string;

@@ -7,7 +7,7 @@ import type {
   HealthCheck,
 } from './api-types'
 
-import type { Empresa, Operacao, ConfigToml, Documento as RichDocumento } from './types'
+import type { Empresa, Operacao, ConfigToml, Documento as RichDocumento, TenantProfile, LoginResponse, CadastroResponse, CadastroData } from './types'
 import { parseNfseXml } from './services/xml-parser'
 
 export const BASE = '/api/v1'
@@ -372,6 +372,38 @@ export async function uploadCertificado(
     throw new Error(body.detail || `HTTP ${res.status}`)
   }
   return res.json()
+}
+
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
+export async function login(email: string, senha: string): Promise<LoginResponse> {
+  return requestJson<LoginResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, senha }),
+  })
+}
+
+export async function cadastrar(data: CadastroData): Promise<CadastroResponse> {
+  return requestJson<CadastroResponse>('/auth/cadastrar', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function buscarTenant(): Promise<{ data: TenantProfile }> {
+  return requestJson<{ data: TenantProfile }>('/tenant', { method: 'GET' })
+}
+
+export async function atualizarTenant(data: Partial<TenantProfile>): Promise<{ data: TenantProfile }> {
+  return requestJson<{ data: TenantProfile }>('/tenant', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
 }
 
 function toFormData(data: Empresa): FormData {
