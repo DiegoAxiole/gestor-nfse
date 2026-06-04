@@ -59,14 +59,37 @@ Permanece: `id`, `tenant_id`, `email`, `senha_hash`, `created_at`.
 
 ### Migration
 
-1. Adicionar colunas à tabela `tenants`: uuid, tipo, documento, nome_fantasia,
-   inscricao_estadual, email_contato, telefone_celular, whatsapp, telefone_fixo,
-   cep, logradouro, numero, complemento, bairro, cidade, uf, updated_at, updated_by
-2. Gerar UUIDv4 para cada tenant existente via `gen_random_uuid()` (pgcrypto)
-3. `UPDATE tenants SET tipo = 'pj', documento = '00000000000000', email_contato = (SELECT email FROM tenant_usuarios WHERE tenant_usuarios.tenant_id = tenants.id LIMIT 1)`
-4. Alterar `slug` para nullable e remover UNIQUE
-5. Criar UNIQUE INDEX em `uuid` e `documento`
-6. Criar INDEX em `tipo`
+```sql
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+ALTER TABLE tenants ADD COLUMN uuid varchar(36) NOT NULL DEFAULT gen_random_uuid()::text;
+ALTER TABLE tenants ADD COLUMN tipo varchar(2) NOT NULL DEFAULT 'pj';
+ALTER TABLE tenants ADD COLUMN documento varchar(20) NOT NULL DEFAULT '';
+ALTER TABLE tenants ADD COLUMN nome_fantasia varchar(255);
+ALTER TABLE tenants ADD COLUMN inscricao_estadual varchar(20);
+ALTER TABLE tenants ADD COLUMN email_contato varchar(255) NOT NULL DEFAULT '';
+ALTER TABLE tenants ADD COLUMN telefone_celular varchar(20);
+ALTER TABLE tenants ADD COLUMN whatsapp boolean NOT NULL DEFAULT false;
+ALTER TABLE tenants ADD COLUMN telefone_fixo varchar(20);
+ALTER TABLE tenants ADD COLUMN cep varchar(8);
+ALTER TABLE tenants ADD COLUMN logradouro varchar(255);
+ALTER TABLE tenants ADD COLUMN numero varchar(20);
+ALTER TABLE tenants ADD COLUMN complemento varchar(100);
+ALTER TABLE tenants ADD COLUMN bairro varchar(100);
+ALTER TABLE tenants ADD COLUMN cidade varchar(100);
+ALTER TABLE tenants ADD COLUMN uf varchar(2);
+ALTER TABLE tenants ADD COLUMN updated_at timestamp DEFAULT now() NOT NULL;
+ALTER TABLE tenants ADD COLUMN updated_by integer REFERENCES tenant_usuarios(id);
+
+UPDATE tenants SET tipo = 'pj', documento = '00000000000000',
+  email_contato = (SELECT email FROM tenant_usuarios WHERE tenant_usuarios.tenant_id = tenants.id LIMIT 1);
+
+ALTER TABLE tenants ALTER COLUMN slug DROP NOT NULL;
+DROP INDEX IF EXISTS tenants_slug_unique;
+CREATE UNIQUE INDEX IF NOT EXISTS tenants_uuid_idx ON tenants(uuid);
+CREATE UNIQUE INDEX IF NOT EXISTS tenants_documento_idx ON tenants(documento);
+CREATE INDEX IF NOT EXISTS tenants_tipo_idx ON tenants(tipo);
+```
 
 ## API
 
@@ -119,10 +142,25 @@ Retorna todos os dados do tenant do usuário logado (lê `tenant_id` do JWT, sem
 
 ### Validações (Zod + cpf-cnpj-validator)
 
+```ts
+import { cpf, cnpj } from 'cpf-cnpj-validator'
+import { z } from 'zod'
+
+const CadastroSchema = z.object({
+  tipo: z.enum(['pj', 'pf']),
+  documento: z.string().transform(v => v.replace(/\D/g, '')),
+  nome: z.string().min(1),
+  email: z.string().email(),
+  senha: z.string().min(6),
+}).refine(data => {
+  if (data.tipo === 'pf') return cpf.isValid(data.documento)
+  if (data.tipo === 'pj') return cnpj.isValid(data.documento)
+  return false
+}, { message: 'Documento invalido para o tipo selecionado', path: ['documento'] })
+```
+
 - `tipo`: enum `"pj"` | `"pf"`
-- `documento`: sanitizado (remove não-dígitos) + validado matematicamente com
-  `cpf-cnpj-validator` — 14 dígitos c/ dígitos verificadores válidos (PJ) ou
-  11 dígitos c/ dígitos verificadores válidos (PF)
+- `documento`: sanitizado (remove não-dígitos via `.transform()`) + validado matematicamente com `cpf-cnpj-validator` no `.refine()`
 - `email_contato`: email válido
 - `telefone_celular`: só dígitos, 10-11 caracteres se preenchido
 - `cep`: 8 dígitos se preenchido
@@ -160,9 +198,11 @@ Nova rota protegida para preencher/editar dados complementares.
 - Logradouro, Número, Complemento, Bairro, Cidade, UF — opcionais, alguns auto-preenchidos
 
 **ViaCEP:** ao sair do campo CEP (`onBlur`), faz fetch em
-`https://viacep.com.br/ws/${cep}/json/` com **timeout de 3 segundos**.
-Se falhar ou expirar, os campos de endereço ficam livres para preenchimento manual
-— sem travar a tela, sem mensagem de erro bloqueante.
+`https://viacep.com.br/ws/${cep}/json/` com **AbortController + timeout de 3 segundos**.
+O ViaCEP retorna HTTP 200 mesmo para CEP inválido, com `{ "erro": true }` no body —
+portanto a validação deve checar `if (data.erro)` após o parse do JSON.
+Se falhar (timeout, rede, CEP inválido), os campos de endereço ficam livres para
+preenchimento manual — sem travar a tela, sem mensagem de erro bloqueante.
 
 ### Redirect pós-cadastro
 
@@ -184,11 +224,10 @@ export async function updateTenantProfile(data: Partial<TenantProfile>): Promise
 Atualizar `cadastrar` no AuthContext para aceitar `tipo` e `documento` além de
 `nome`, `email`, `senha`.
 
-### Types
+### Types (frontend)
 
 ```ts
 interface TenantProfile {
-  id: number
   uuid: string
   tipo: 'pj' | 'pf'
   documento: string
@@ -208,6 +247,8 @@ interface TenantProfile {
   uf?: string
 }
 ```
+
+O `id` serial permanece apenas no banco (PK para joins). O frontend expõe apenas o `uuid`.
 
 ## Seed
 
