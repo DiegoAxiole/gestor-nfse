@@ -1,7 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { buscarTenant, atualizarTenant } from '../api'
 import type { TenantProfile } from '../types'
 import { AlertCircle, CheckCircle } from 'lucide-react'
+
+const FIELDS_UPDATABLE: (keyof TenantProfile)[] = [
+  'nome_fantasia', 'inscricao_estadual', 'email_contato',
+  'telefone_celular', 'whatsapp', 'telefone_fixo',
+  'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf',
+]
 
 function formatCNPJ(value: string): string {
   const clean = value.replace(/\D/g, '')
@@ -47,7 +53,7 @@ interface FieldProps {
   type?: string
 }
 
-function Field({ label, value, editValue, editing, onChange, placeholder, fullWidth, type }: FieldProps) {
+const Field = memo(function Field({ label, value, editValue, editing, onChange, placeholder, fullWidth, type }: FieldProps) {
   return (
     <div className={fullWidth ? 'md:col-span-2' : ''}>
       <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">{label}</label>
@@ -64,7 +70,7 @@ function Field({ label, value, editValue, editing, onChange, placeholder, fullWi
       )}
     </div>
   )
-}
+})
 
 export default function PerfilView() {
   const [profile, setProfile] = useState<TenantProfile | null>(null)
@@ -91,7 +97,12 @@ export default function PerfilView() {
     setError('')
     setSuccess('')
     try {
-      const res = await atualizarTenant(editData)
+      const body: Record<string, unknown> = {}
+      for (const key of FIELDS_UPDATABLE) {
+        const val = editData[key]
+        if (val !== undefined) body[key] = val
+      }
+      const res = await atualizarTenant(body as Partial<TenantProfile>)
       setProfile(res.data)
       setEditData(res.data)
       setEditing(false)
@@ -145,7 +156,10 @@ export default function PerfilView() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-200 font-sans flex items-center justify-center">
-        <p className="text-sm text-slate-400">Carregando...</p>
+        <div className="flex items-center gap-3">
+          <div className="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full" />
+          <p className="text-sm text-slate-400">Carregando...</p>
+        </div>
       </div>
     )
   }
@@ -160,7 +174,6 @@ export default function PerfilView() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      {/* Success feedback */}
       {success && (
         <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-400 text-sm">
           <CheckCircle className="w-4 h-4 shrink-0" />
@@ -168,7 +181,6 @@ export default function PerfilView() {
         </div>
       )}
 
-      {/* Error feedback */}
       {error && (
         <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-center gap-2 text-rose-400 text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -177,41 +189,28 @@ export default function PerfilView() {
       )}
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-sm font-bold text-white uppercase tracking-wider">Perfil do Tenant</h1>
           <div className="flex gap-2">
             {editing ? (
               <>
-                <button
-                  onClick={handleCancel}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold py-2 px-4 rounded-lg transition-all cursor-pointer"
-                >
+                <button onClick={handleCancel} className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold py-2 px-4 rounded-lg transition-all cursor-pointer">
                   Cancelar
                 </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 px-4 rounded-lg transition-all cursor-pointer disabled:opacity-50"
-                >
+                <button onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 px-4 rounded-lg transition-all cursor-pointer disabled:opacity-50">
                   {saving ? 'Salvando...' : 'Salvar'}
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => setEditing(true)}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 px-4 rounded-lg transition-all cursor-pointer"
-              >
+              <button onClick={() => setEditing(true)} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 px-4 rounded-lg transition-all cursor-pointer">
                 Editar
               </button>
             )}
           </div>
         </div>
 
-        {/* Identificação */}
         <h2 className="text-sm font-bold text-white mt-6 mb-3">Identificação</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Tipo */}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">Tipo</label>
             <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-md ${profile.tipo === 'PJ' ? 'bg-indigo-600' : 'bg-emerald-600'} text-white`}>
@@ -219,73 +218,24 @@ export default function PerfilView() {
             </span>
           </div>
 
-          {/* Documento */}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">Documento</label>
             <p className="text-sm text-white">{formatDocumento(profile.tipo, profile.documento)}</p>
           </div>
 
-          <Field
-            label="Nome"
-            value={profile.nome}
-            editValue={editData.nome}
-            editing={editing}
-            onChange={v => setEditField('nome', v)}
-            placeholder="Nome"
-          />
-
-          <Field
-            label="Nome Fantasia"
-            value={profile.nome_fantasia}
-            editValue={editData.nome_fantasia ?? ''}
-            editing={editing}
-            onChange={v => setEditField('nome_fantasia', v)}
-            placeholder="Nome fantasia"
-          />
-
-          <Field
-            label="Inscrição Estadual"
-            value={profile.inscricao_estadual}
-            editValue={editData.inscricao_estadual ?? ''}
-            editing={editing}
-            onChange={v => setEditField('inscricao_estadual', v)}
-            placeholder="Inscrição estadual"
-          />
+          <Field label="Nome" value={profile.nome} editValue={editData.nome} editing={editing} onChange={v => setEditField('nome', v)} placeholder="Nome" fullWidth />
         </div>
 
-        {/* Contato */}
         <h2 className="text-sm font-bold text-white mt-6 mb-3">Contato</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field
-            label="E-mail"
-            value={profile.email_contato}
-            editValue={editData.email_contato ?? ''}
-            editing={editing}
-            onChange={v => setEditField('email_contato', v)}
-            placeholder="email@exemplo.com"
-            type="email"
-          />
+          <Field label="E-mail" value={profile.email_contato} editValue={editData.email_contato ?? ''} editing={editing} onChange={v => setEditField('email_contato', v)} placeholder="email@exemplo.com" type="email" />
+          <Field label="Celular" value={formatPhone(profile.telefone_celular)} editValue={editData.telefone_celular ?? ''} editing={editing} onChange={v => setEditField('telefone_celular', v)} placeholder="(11) 99999-9999" />
 
-          <Field
-            label="Celular"
-            value={formatPhone(profile.telefone_celular)}
-            editValue={editData.telefone_celular ?? ''}
-            editing={editing}
-            onChange={v => setEditField('telefone_celular', v)}
-            placeholder="(11) 99999-9999"
-          />
-
-          {/* WhatsApp */}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">WhatsApp</label>
             {editing ? (
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editData.whatsapp ?? false}
-                  onChange={e => setEditData(prev => ({ ...prev, whatsapp: e.target.checked }))}
-                  className="w-4 h-4 rounded border-slate-800 bg-slate-950 text-indigo-600 focus:ring-indigo-500/50 focus:ring-2"
-                />
+                <input type="checkbox" checked={editData.whatsapp ?? false} onChange={e => setEditData(prev => ({ ...prev, whatsapp: e.target.checked }))} className="w-4 h-4 rounded border-slate-800 bg-slate-950 text-indigo-600 focus:ring-indigo-500/50 focus:ring-2" />
                 <span className="text-sm text-white">Mesmo número do celular</span>
               </label>
             ) : (
@@ -293,94 +243,29 @@ export default function PerfilView() {
             )}
           </div>
 
-          <Field
-            label="Telefone Fixo"
-            value={formatPhone(profile.telefone_fixo)}
-            editValue={editData.telefone_fixo ?? ''}
-            editing={editing}
-            onChange={v => setEditField('telefone_fixo', v)}
-            placeholder="(11) 3333-3333"
-          />
+          <Field label="Telefone Fixo" value={formatPhone(profile.telefone_fixo)} editValue={editData.telefone_fixo ?? ''} editing={editing} onChange={v => setEditField('telefone_fixo', v)} placeholder="(11) 3333-3333" />
         </div>
 
-        {/* Endereço */}
         <h2 className="text-sm font-bold text-white mt-6 mb-3">Endereço</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* CEP */}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">CEP</label>
             {editing ? (
               <div>
-                <input
-                  type="text"
-                  value={editData.cep ?? ''}
-                  onChange={e => setEditField('cep', e.target.value)}
-                  onBlur={handleCepBlur}
-                  placeholder="00000-000"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                />
-                {cepError && (
-                  <p className="text-[11px] text-rose-400 mt-1">{cepError}</p>
-                )}
+                <input type="text" value={editData.cep ?? ''} onChange={e => setEditField('cep', e.target.value)} onBlur={handleCepBlur} placeholder="00000-000" className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                {cepError && <p className="text-[11px] text-rose-400 mt-1">{cepError}</p>}
               </div>
             ) : (
               <p className="text-sm text-white">{formatCep(profile.cep)}</p>
             )}
           </div>
 
-          <Field
-            label="Logradouro"
-            value={profile.logradouro}
-            editValue={editData.logradouro ?? ''}
-            editing={editing}
-            onChange={v => setEditField('logradouro', v)}
-            placeholder="Logradouro"
-          />
-
-          <Field
-            label="Número"
-            value={profile.numero}
-            editValue={editData.numero ?? ''}
-            editing={editing}
-            onChange={v => setEditField('numero', v)}
-            placeholder="Número"
-          />
-
-          <Field
-            label="Complemento"
-            value={profile.complemento}
-            editValue={editData.complemento ?? ''}
-            editing={editing}
-            onChange={v => setEditField('complemento', v)}
-            placeholder="Complemento"
-          />
-
-          <Field
-            label="Bairro"
-            value={profile.bairro}
-            editValue={editData.bairro ?? ''}
-            editing={editing}
-            onChange={v => setEditField('bairro', v)}
-            placeholder="Bairro"
-          />
-
-          <Field
-            label="Cidade"
-            value={profile.cidade}
-            editValue={editData.cidade ?? ''}
-            editing={editing}
-            onChange={v => setEditField('cidade', v)}
-            placeholder="Cidade"
-          />
-
-          <Field
-            label="UF"
-            value={profile.uf}
-            editValue={editData.uf ?? ''}
-            editing={editing}
-            onChange={v => setEditField('uf', v)}
-            placeholder="UF"
-          />
+          <Field label="Logradouro" value={profile.logradouro} editValue={editData.logradouro ?? ''} editing={editing} onChange={v => setEditField('logradouro', v)} placeholder="Logradouro" />
+          <Field label="Número" value={profile.numero} editValue={editData.numero ?? ''} editing={editing} onChange={v => setEditField('numero', v)} placeholder="Número" />
+          <Field label="Complemento" value={profile.complemento} editValue={editData.complemento ?? ''} editing={editing} onChange={v => setEditField('complemento', v)} placeholder="Complemento" />
+          <Field label="Bairro" value={profile.bairro} editValue={editData.bairro ?? ''} editing={editing} onChange={v => setEditField('bairro', v)} placeholder="Bairro" />
+          <Field label="Cidade" value={profile.cidade} editValue={editData.cidade ?? ''} editing={editing} onChange={v => setEditField('cidade', v)} placeholder="Cidade" />
+          <Field label="UF" value={profile.uf} editValue={editData.uf ?? ''} editing={editing} onChange={v => setEditField('uf', v)} placeholder="UF" />
         </div>
       </div>
     </div>
