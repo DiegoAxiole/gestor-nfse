@@ -123,11 +123,6 @@ if errorlevel 1 (
   call :err "Falha ao instalar dependencias do backend"
 )
 echo.
-echo   Gerando Prisma Client...
-call "%NPX%" --yes prisma generate
-if errorlevel 1 (
-  call :err "Falha ao gerar Prisma Client"
-)
 
 :build_backend
 if exist "%BACKEND%\dist\index.js" goto :build_frontend

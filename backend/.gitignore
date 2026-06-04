@@ -25,3 +25,4 @@ certificado/
 *.log
 
 /src/generated/prisma
+src/db/migrations/

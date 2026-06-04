@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm install --no-progress
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm install --no-progress
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Prune dev deps
+        working-directory: backend
+        run: npm prune --omit=dev --no-progress
+
+      - name: Download portable Node.js
+        shell: pwsh
+        run: |
+          $url = "https://nodejs.org/dist/v24.16.0/node-v24.16.0-win-x64.zip"
+          $out = "$env:TEMP\node.zip"
+          Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing
+          Expand-Archive -Path $out -DestinationPath ".tools\" -Force
+          Remove-Item $out
+
+      - name: Stage release files
+        shell: pwsh
+        run: |
+          $stage = "$env:TEMP\gestor-nfse-release"
+          New-Item -ItemType Directory -Path $stage -Force
+
+          # Portable Node
+          if (-not (Test-Path ".tools\node-v24.16.0-win-x64\node.exe")) {
+            Write-Error "Node.js portable not found at .tools\node-v24.16.0-win-x64"
+            exit 1
+          }
+          Copy-Item ".tools\node-v24.16.0-win-x64" "$stage\.tools\" -Recurse -Force
+
+          # Backend (built + node_modules + prisma)
+          Copy-Item "backend\dist" "$stage\backend\dist\" -Recurse -Force
+          Copy-Item "backend\node_modules" "$stage\backend\node_modules\" -Recurse -Force
+          Copy-Item "backend\prisma" "$stage\backend\prisma\" -Recurse -Force
+          Copy-Item "backend\package.json" "$stage\backend\" -Force
+          if (Test-Path "backend\prisma.config.ts") { Copy-Item "backend\prisma.config.ts" "$stage\backend\" -Force }
+
+          # data dir
+          New-Item -ItemType Directory -Path "$stage\data" -Force
+
+          # Root files
+          Copy-Item "start.bat" "$stage\" -Force
+          Copy-Item "README.md" "$stage\" -Force
+          if (Test-Path "LICENSE") { Copy-Item "LICENSE" "$stage\" -Force }
+
+          # .env template
+          Set-Content "$stage\backend\.env" "DATABASE_URL=`"file:../data/nfse.sqlite`""
+
+          # Zip
+          $version = "${{ github.ref_name }}"
+          $zipName = "gestor-nfse-$version.zip"
+          $zipPath = "$env:TEMP\$zipName"
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, $zipPath, 'Optimal', $null)
+
+          # Copy to workspace
+          New-Item -ItemType Directory -Path "releases" -Force
+          Copy-Item $zipPath "releases\$zipName" -Force
+
+          # Cleanup
+          Remove-Item $stage -Recurse -Force
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: releases/gestor-nfse-*.zip
+          generate_release_notes: true

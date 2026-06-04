@@ -94,9 +94,6 @@ if not exist "node_modules" (
 )
 if !errorlevel! equ 0 (echo   OK) else (echo   ERRO & popd & pause & exit /b 1)
 
-echo   Gerando Prisma Client...
-call npx prisma generate
-if !errorlevel! equ 0 (echo   OK) else (echo   ERRO & popd & pause & exit /b 1)
 popd
 
 :: ======== 3. FRONTEND DEPS ========
