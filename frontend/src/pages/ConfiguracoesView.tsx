@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { ConfigToml } from "../types";
 import { 
   Settings, 
@@ -11,17 +12,8 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 
-interface ConfiguracoesViewProps {
-  config: ConfigToml;
-  onSaveConfig: (newConfig: ConfigToml) => void;
-  onResetDatabase: () => void;
-}
-
-export default function ConfiguracoesView({
-  config,
-  onSaveConfig,
-  onResetDatabase
-}: ConfiguracoesViewProps) {
+export default function ConfiguracoesView() {
+  const { config, onSaveConfig, onResetDatabase } = useOutletContext<any>();
   // Local states for form editing
   const [razao, setRazao] = useState(config.prestador.razao_social);
   const [cnpj, setCnpj] = useState(config.prestador.cnpj);

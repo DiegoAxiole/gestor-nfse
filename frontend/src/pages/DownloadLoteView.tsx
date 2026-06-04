@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Empresa, Documento } from "../types";
 import { formatCnpj, maskRazao } from "../utils";
 import * as api from "../api";
@@ -12,13 +13,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
-interface DownloadLoteViewProps {
-  empresas: Empresa[];
-  docs: Documento[];
-  lgpdAtivo?: boolean;
-}
-
-export default function DownloadLoteView({ empresas, docs, lgpdAtivo = false }: DownloadLoteViewProps) {
+export default function DownloadLoteView() {
+  const { empresas, docs, lgpdAtivo = false } = useOutletContext<any>();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string>("");
   

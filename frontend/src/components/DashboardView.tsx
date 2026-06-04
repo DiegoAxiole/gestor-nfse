@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Documento, Operacao, Empresa, ConfigToml } from "../types";
 import { formatCurrency, formatDate, calculateRemainingDays, formatCnpj, generateUUID, maskRazao, maskNome } from "../utils";
 import * as api from "../api";
@@ -14,31 +15,8 @@ import {
   Lock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-interface DashboardViewProps {
-  docs: Documento[];
-  ops: Operacao[];
-  empresas: Empresa[];
-  config: ConfigToml;
-  activeEmpresa?: Empresa;
-  lgpdAtivo?: boolean;
-  onNavigate: (page: string) => void;
-  onSetActiveEmpresa: (id: string) => void;
-  onAddOperation?: (op: Operacao) => void;
-  onAddDocuments?: (docList: Documento[]) => void;
-}
-
-export default function DashboardView({
-  docs,
-  ops,
-  empresas = [],
-  config,
-  activeEmpresa,
-  lgpdAtivo = false,
-  onNavigate,
-  onSetActiveEmpresa,
-  onAddOperation,
-  onAddDocuments
-}: DashboardViewProps) {
+export default function DashboardView() {
+  const { docs, ops, empresas = [], config, activeEmpresa, lgpdAtivo = false, onNavigate, onSetActiveEmpresa, onAddOperation, onAddDocuments } = useOutletContext<any>();
   // Aggregate multi-company stats
   const totalCompaniesCount = empresas.length;
   

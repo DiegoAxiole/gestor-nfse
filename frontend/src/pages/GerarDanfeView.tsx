@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Documento, Empresa } from "../types";
 import { formatCurrency, formatDate, maskRazao, maskNome } from "../utils";
 import type { NfseData } from "../services/danfse-parser";
@@ -15,23 +16,8 @@ import {
 
 
 
-interface GerarDanfeViewProps {
-  docs: Documento[];
-  empresas: Empresa[];
-  activeEmpresaId: string;
-  selectedChave?: string;
-  lgpdAtivo?: boolean;
-  onViewXml: (chave: string) => void;
-}
-
-export default function GerarDanfeView({
-  docs,
-  empresas,
-  activeEmpresaId,
-  selectedChave = "",
-  lgpdAtivo = false,
-  onViewXml
-}: GerarDanfeViewProps) {
+export default function GerarDanfeView() {
+  const { docs, empresas, activeEmpresaId, selectedChave = "", lgpdAtivo = false, onViewXml } = useOutletContext<any>();
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Empresa } from "../types";
 import * as api from "../api";
 import { formatCnpj, calculateRemainingDays, maskRazao } from "../utils";
@@ -21,23 +22,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
-interface EmpresasViewProps {
-  empresas: Empresa[];
-  activeEmpresaId: string;
-  lgpdAtivo?: boolean;
-  onSetActive: (id: string) => void;
-  onEmpresaAtualizada: () => void;
-  onEmpresaSelecionada: (id: string) => void;
-}
-
-export default function EmpresasView({
-  empresas,
-  activeEmpresaId,
-  lgpdAtivo = false,
-  onSetActive,
-  onEmpresaAtualizada,
-  onEmpresaSelecionada
-}: EmpresasViewProps) {
+export default function EmpresasView() {
+  const { empresas, activeEmpresaId, lgpdAtivo = false, onSetActive, onEmpresaAtualizada, onEmpresaSelecionada } = useOutletContext<any>();
   const [isEditing, setIsEditing] = useState(false);
   const [editingEmpresa, setEditingEmpresa] = useState<Empresa | null>(null);
 

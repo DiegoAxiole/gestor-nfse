@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, type FormEvent } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Documento, Empresa } from "../types";
 import { formatCurrency, formatDate, formatCnpj, maskRazao, maskNome, maskChave } from "../utils";
 import { buscarDocumentosPaginated } from "../api";
@@ -15,19 +16,8 @@ import {
   X,
 } from "lucide-react";
 
-interface DocumentosViewProps {
-  empresas: Empresa[];
-  lgpdAtivo?: boolean;
-  onViewXml: (chave: string) => void;
-  onGenerateDanfe: (chave: string) => void;
-}
-
-export default function DocumentosView({
-  empresas,
-  lgpdAtivo = false,
-  onViewXml,
-  onGenerateDanfe,
-}: DocumentosViewProps) {
+export default function DocumentosView() {
+  const { empresas, lgpdAtivo = false, onViewXml, onGenerateDanfe } = useOutletContext<any>();
   const [searchTerm, setSearchTerm] = useState("");
   const [empresaFilter, setEmpresaFilter] = useState("");
   const [startDate, setStartDate] = useState("");

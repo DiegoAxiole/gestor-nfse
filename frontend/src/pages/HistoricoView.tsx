@@ -1,4 +1,5 @@
 import { useState, Fragment } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Operacao, Empresa } from "../types";
 import { formatDate, formatCnpj, maskRazao } from "../utils";
 import { 
@@ -13,19 +14,8 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 
-interface HistoricoViewProps {
-  ops: Operacao[];
-  empresas: Empresa[];
-  lgpdAtivo?: boolean;
-  onViewXml: (chave: string) => void;
-}
-
-export default function HistoricoView({
-  ops,
-  empresas = [],
-  lgpdAtivo = false,
-  onViewXml
-}: HistoricoViewProps) {
+export default function HistoricoView() {
+  const { ops, empresas = [], lgpdAtivo = false, onViewXml } = useOutletContext<any>();
   const [filterTipo, setFilterTipo] = useState<string>("TODOS");
   const [filterStatus, setFilterStatus] = useState<string>("TODOS");
   const [searchTerm, setSearchTerm] = useState<string>("");
