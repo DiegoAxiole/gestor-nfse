@@ -10,13 +10,21 @@ import type {
 import type { Empresa, Operacao, ConfigToml, Documento as RichDocumento } from './types'
 import { parseNfseXml } from './services/xml-parser'
 
-const BASE = '/api/v1'
+export const BASE = '/api/v1'
+
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem('token')
+  return token ? { 'Authorization': `Bearer ${token}` } : {}
+}
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  })
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...getAuthHeaders() }
+  const res = await fetch(`${BASE}${path}`, { headers, ...init })
+  if (res.status === 401) {
+    localStorage.removeItem('token')
+    window.location.href = '/login'
+    throw new Error('Sessao expirada')
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(body.detail || `HTTP ${res.status}`)
@@ -25,7 +33,12 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function requestBlob(path: string): Promise<Blob> {
-  const res = await fetch(`${BASE}${path}`)
+  const res = await fetch(`${BASE}${path}`, { headers: getAuthHeaders() })
+  if (res.status === 401) {
+    localStorage.removeItem('token')
+    window.location.href = '/login'
+    throw new Error('Sessao expirada')
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(body.detail || `HTTP ${res.status}`)
@@ -34,7 +47,12 @@ async function requestBlob(path: string): Promise<Blob> {
 }
 
 async function requestText(path: string): Promise<string> {
-  const res = await fetch(`${BASE}${path}`)
+  const res = await fetch(`${BASE}${path}`, { headers: getAuthHeaders() })
+  if (res.status === 401) {
+    localStorage.removeItem('token')
+    window.location.href = '/login'
+    throw new Error('Sessao expirada')
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(body.detail || `HTTP ${res.status}`)
@@ -58,7 +76,7 @@ export const api = {
     fd.append('ambiente', input.ambiente)
     fd.append('certificado_pfx', input.certificado_pfx)
     fd.append('certificado_senha', input.certificado_senha)
-    return fetch(`${BASE}/prestadores`, { method: 'POST', body: fd }).then(r => {
+    return fetch(`${BASE}/prestadores`, { method: 'POST', body: fd, headers: getAuthHeaders() }).then(r => {
       if (!r.ok) return r.json().then(e => { throw new Error(e.detail) })
       return r.json()
     })
@@ -78,7 +96,7 @@ export const api = {
     if (dados.ambiente !== undefined) fd.append('ambiente', dados.ambiente)
     if (dados.certificado_pfx !== undefined) fd.append('certificado_pfx', dados.certificado_pfx)
     if (dados.certificado_senha !== undefined) fd.append('certificado_senha', dados.certificado_senha)
-    return fetch(`${BASE}/prestadores/${cnpj}`, { method: 'PUT', body: fd }).then(r => {
+    return fetch(`${BASE}/prestadores/${cnpj}`, { method: 'PUT', body: fd, headers: getAuthHeaders() }).then(r => {
       if (!r.ok) return r.json().then(e => { throw new Error(e.detail) })
       return r.json()
     })
@@ -325,7 +343,7 @@ export async function deleteEmpresa(cnpj: string): Promise<void> {
 export async function createEmpresa(data: Empresa, certPfx?: File): Promise<void> {
   const fd = toFormData(data)
   if (certPfx) fd.append('certificado_pfx', certPfx)
-  await fetch(`${BASE}/prestadores`, { method: 'POST', body: fd }).then(r => {
+  await fetch(`${BASE}/prestadores`, { method: 'POST', body: fd, headers: getAuthHeaders() }).then(r => {
     if (!r.ok) return r.json().then(e => { throw new Error(e.detail) })
   })
 }
@@ -336,7 +354,7 @@ export async function updateEmpresa(cnpj: string, data: Empresa, certPfx?: File)
   fd.append('ambiente', data.ambiente)
   if (data.certificado_senha) fd.append('certificado_senha', data.certificado_senha)
   if (certPfx) fd.append('certificado_pfx', certPfx)
-  await fetch(`${BASE}/prestadores/${cnpj}`, { method: 'PUT', body: fd }).then(r => {
+  await fetch(`${BASE}/prestadores/${cnpj}`, { method: 'PUT', body: fd, headers: getAuthHeaders() }).then(r => {
     if (!r.ok) return r.json().then(e => { throw new Error(e.detail) })
   })
 }
@@ -348,7 +366,7 @@ export async function uploadCertificado(
   if (cnpj) fd.append('cnpj', cnpj)
   fd.append('certificado_pfx', file)
   fd.append('senha', senha)
-  const res = await fetch(`${BASE}/prestadores/upload-certificado`, { method: 'POST', body: fd })
+  const res = await fetch(`${BASE}/prestadores/upload-certificado`, { method: 'POST', body: fd, headers: getAuthHeaders() })
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(body.detail || `HTTP ${res.status}`)
