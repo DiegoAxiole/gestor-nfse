@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 import { carregarConfig } from './config.js'
 import { db } from './db/db.js'
-import { configuracoes, backgroundTasks } from './db/schema.js'
+import { backgroundTasks } from './db/schema.js'
 import { eq, sql, and } from 'drizzle-orm'
 import { criarRouterPrestadores } from './modules/prestadores/prestadores.routes.js'
 import { criarRouterConfig } from './modules/config/config.routes.js'
@@ -16,31 +16,23 @@ import { criarRouterOperacoes } from './modules/operacoes/operacoes.routes.js'
 import { criarRouterTasks } from './modules/tasks/tasks.routes.js'
 import { criarRouterAuth } from './modules/auth/auth.routes.js'
 import { errorHandler } from './shared/error-handler.js'
+import { authMiddleware } from './shared/auth.middleware.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export async function createApp() {
   const config = carregarConfig()
 
-  const existingConfig = db.select().from(configuracoes).where(eq(configuracoes.id, 1)).get()
-  if (!existingConfig) {
-    db.insert(configuracoes).values({
-      id: 1,
-      ambiente: config.ambiente,
-      codigo_municipio: config.codigo_municipio,
-    }).run()
-  }
-
-  db.update(backgroundTasks).set({
+  await db.update(backgroundTasks).set({
     status: 'error',
     erro_texto: 'Servidor reiniciado enquanto a task estava em execução',
-    atualizado_em: new Date().toISOString(),
-  }).where(sql`status IN ('processing', 'pending')`).run()
+    atualizado_em: new Date(),
+  }).where(sql`status IN ('processing', 'pending')`)
 
-  db.delete(backgroundTasks).where(and(
+  await db.delete(backgroundTasks).where(and(
     sql`status IN ('completed', 'error')`,
-    sql`atualizado_em < datetime('now', '-24 hours')`
-  )).run()
+    sql`atualizado_em < NOW() - INTERVAL '24 hours'`
+  ))
 
   const app = express()
 
@@ -99,13 +91,13 @@ export async function createApp() {
     res.json({ status: 'ok', version: '0.5.0' })
   })
 
-  router.use('/api/v1/prestadores', criarRouterPrestadores(config.codigo_municipio))
-  router.use('/api/v1/config', criarRouterConfig())
-  router.use('/api/v1/distribuicao', criarRouterDistribuicao(config.codigo_municipio))
-  router.use('/api/v1/documentos', criarRouterDocumentos())
-  router.use('/api/v1/operacoes', criarRouterOperacoes())
+  router.use('/api/v1/prestadores', authMiddleware, criarRouterPrestadores(config.codigo_municipio))
+  router.use('/api/v1/config', authMiddleware, criarRouterConfig())
+  router.use('/api/v1/distribuicao', authMiddleware, criarRouterDistribuicao(config.codigo_municipio))
+  router.use('/api/v1/documentos', authMiddleware, criarRouterDocumentos())
+  router.use('/api/v1/operacoes', authMiddleware, criarRouterOperacoes())
   router.use('/api/v1/auth', criarRouterAuth())
-  router.use('/api/v1/tasks', criarRouterTasks())
+  router.use('/api/v1/tasks', authMiddleware, criarRouterTasks())
 
   app.use(router)
 
