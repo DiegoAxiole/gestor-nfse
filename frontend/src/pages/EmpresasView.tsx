@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import type { OutletContext } from "../components/ProtectedLayout";
 import { Empresa } from "../types";
 import * as api from "../api";
 import { formatCnpj, calculateRemainingDays, maskRazao } from "../utils";
@@ -23,7 +24,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 
 export default function EmpresasView() {
-  const { empresas, activeEmpresaId, lgpdAtivo = false, onSetActive, onEmpresaAtualizada, onEmpresaSelecionada } = useOutletContext<any>();
+  const { empresas, activeEmpresaId, lgpdAtivo = false, onSetActive, onEmpresaAtualizada, onEmpresaSelecionada } = useOutletContext<OutletContext>();
   const [isEditing, setIsEditing] = useState(false);
   const [editingEmpresa, setEditingEmpresa] = useState<Empresa | null>(null);
 

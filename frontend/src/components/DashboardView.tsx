@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
+import type { OutletContext } from "./ProtectedLayout";
 import { Documento, Operacao, Empresa, ConfigToml } from "../types";
 import { formatCurrency, formatDate, calculateRemainingDays, formatCnpj, generateUUID, maskRazao, maskNome } from "../utils";
 import * as api from "../api";
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 export default function DashboardView() {
-  const { docs, ops, empresas = [], config, activeEmpresa, lgpdAtivo = false, onNavigate, onSetActiveEmpresa, onAddOperation, onAddDocuments } = useOutletContext<any>();
+  const { docs, ops, empresas = [], config, activeEmpresa, lgpdAtivo = false, onNavigate, onSetActiveEmpresa, onAddOperation, onAddDocuments } = useOutletContext<OutletContext>();
   // Aggregate multi-company stats
   const totalCompaniesCount = empresas.length;
   

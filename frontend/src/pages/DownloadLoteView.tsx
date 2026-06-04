@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
+import type { OutletContext } from "../components/ProtectedLayout";
 import { Empresa, Documento } from "../types";
 import { formatCnpj, maskRazao } from "../utils";
 import * as api from "../api";
@@ -14,7 +15,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 
 export default function DownloadLoteView() {
-  const { empresas, docs, lgpdAtivo = false } = useOutletContext<any>();
+  const { empresas, docs, lgpdAtivo = false } = useOutletContext<OutletContext>();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string>("");
   

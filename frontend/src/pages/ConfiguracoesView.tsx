@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import type { OutletContext } from "../components/ProtectedLayout";
 import { ConfigToml } from "../types";
 import { 
   Settings, 
@@ -13,7 +14,7 @@ import {
 import { motion } from "motion/react";
 
 export default function ConfiguracoesView() {
-  const { config, onSaveConfig, onResetDatabase } = useOutletContext<any>();
+  const { config, onSaveConfig, onResetDatabase } = useOutletContext<OutletContext>();
   // Local states for form editing
   const [razao, setRazao] = useState(config.prestador.razao_social);
   const [cnpj, setCnpj] = useState(config.prestador.cnpj);

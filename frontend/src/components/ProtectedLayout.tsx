@@ -7,8 +7,31 @@ import * as api from '../api'
 import { formatCurrency } from '../utils'
 import { useAuth } from '../auth/AuthContext'
 
+export interface OutletContext {
+  docs: Documento[]
+  ops: Operacao[]
+  config: ConfigToml
+  empresas: Empresa[]
+  activeEmpresaId: string
+  activeEmpresa: Empresa | undefined
+  lgpdAtivo: boolean
+  selectedChave: string
+  onNavigate: (tab: string) => void
+  onSetActiveEmpresa: (id: string) => void
+  onSetActive: (id: string) => void
+  onEmpresaSelecionada: (id: string) => void
+  onEmpresaAtualizada: () => Promise<void>
+  onAddOperation: (op: Operacao) => void
+  onAddDocuments: (docs: Documento[]) => void
+  onSaveConfig: (config: ConfigToml) => Promise<void>
+  onResetDatabase: () => void
+  onViewXml: (chave: string) => void
+  onGenerateDanfe: (chave: string) => void
+  triggerToast: (message: string, type: 'success' | 'error' | 'info') => void
+}
+
 export default function ProtectedLayout() {
-  const { auth, logout } = useAuth()
+  const { logout } = useAuth()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedChave, setSelectedChave] = useState<string>('')

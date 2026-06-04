@@ -1,5 +1,6 @@
 import { useState, Fragment } from "react";
 import { useOutletContext } from "react-router-dom";
+import type { OutletContext } from "../components/ProtectedLayout";
 import { Operacao, Empresa } from "../types";
 import { formatDate, formatCnpj, maskRazao } from "../utils";
 import { 
@@ -15,7 +16,7 @@ import {
 import { motion } from "motion/react";
 
 export default function HistoricoView() {
-  const { ops, empresas = [], lgpdAtivo = false, onViewXml } = useOutletContext<any>();
+  const { ops, empresas = [], lgpdAtivo = false, onViewXml } = useOutletContext<OutletContext>();
   const [filterTipo, setFilterTipo] = useState<string>("TODOS");
   const [filterStatus, setFilterStatus] = useState<string>("TODOS");
   const [searchTerm, setSearchTerm] = useState<string>("");
