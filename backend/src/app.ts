@@ -14,6 +14,7 @@ import { criarRouterDistribuicao } from './modules/distribuicao/distribuicao.rou
 import { criarRouterDocumentos } from './modules/documentos/documentos.routes.js'
 import { criarRouterOperacoes } from './modules/operacoes/operacoes.routes.js'
 import { criarRouterTasks } from './modules/tasks/tasks.routes.js'
+import { criarRouterAuth } from './modules/auth/auth.routes.js'
 import { errorHandler } from './shared/error-handler.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -103,6 +104,7 @@ export async function createApp() {
   router.use('/api/v1/distribuicao', criarRouterDistribuicao(config.codigo_municipio))
   router.use('/api/v1/documentos', criarRouterDocumentos())
   router.use('/api/v1/operacoes', criarRouterOperacoes())
+  router.use('/api/v1/auth', criarRouterAuth())
   router.use('/api/v1/tasks', criarRouterTasks())
 
   app.use(router)
