@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 
 async function seed() {
-  const rows = await db.select().from(tenants).where(eq(tenants.slug, 'admin')).limit(1)
+  const rows = await db.select().from(tenants).where(eq(tenants.nome, 'Administrador')).limit(1)
   const existing = rows[0]
   if (existing) {
     console.log('Seed ja executado. Tenant admin existe.')
@@ -13,7 +13,9 @@ async function seed() {
 
   const tenantRows = await db.insert(tenants).values({
     nome: 'Administrador',
-    slug: 'admin',
+    documento: '00000000000000',
+    email_contato: 'admin@gestornfse.com',
+    tipo: 'pj',
   }).returning()
   const tenant = tenantRows[0]
 
@@ -25,7 +27,7 @@ async function seed() {
   })
 
   console.log('Seed concluido!')
-  console.log(`  Tenant: ${tenant.nome} (slug: ${tenant.slug})`)
+  console.log(`  Tenant: ${tenant.nome} (documento: ${tenant.documento})`)
   console.log('  Email: admin@gestornfse.com')
   console.log('  Senha: admin123')
 }
