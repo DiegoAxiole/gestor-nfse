@@ -16,7 +16,7 @@ declare global {
 const schemaAtualizarTenant = z.object({
   nome_fantasia: z.string().max(255).optional(),
   inscricao_estadual: z.string().max(20).optional(),
-  email_contato: z.string().email().min(1),
+  email_contato: z.string().email().min(1).optional(),
   whatsapp: z.boolean().optional(),
   telefone_celular: z.string().max(20).optional(),
   telefone_fixo: z.string().max(20).optional(),
