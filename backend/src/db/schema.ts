@@ -8,9 +8,26 @@ export const bytea = customType<{ data: Buffer }>({
 
 export const tenants = pgTable('tenants', {
   id: serial('id').primaryKey(),
+  uuid: varchar('uuid', { length: 36 }).notNull().unique().defaultRandom(),
+  tipo: varchar('tipo', { length: 2 }).notNull().default('pj'),
+  documento: varchar('documento', { length: 20 }).notNull().default('').unique(),
   nome: varchar('nome', { length: 255 }).notNull(),
-  slug: varchar('slug', { length: 100 }).notNull().unique(),
+  nome_fantasia: varchar('nome_fantasia', { length: 255 }),
+  inscricao_estadual: varchar('inscricao_estadual', { length: 20 }),
+  email_contato: varchar('email_contato', { length: 255 }).notNull().default(''),
+  telefone_celular: varchar('telefone_celular', { length: 20 }),
+  whatsapp: boolean('whatsapp').notNull().default(false),
+  telefone_fixo: varchar('telefone_fixo', { length: 20 }),
+  cep: varchar('cep', { length: 8 }),
+  logradouro: varchar('logradouro', { length: 255 }),
+  numero: varchar('numero', { length: 20 }),
+  complemento: varchar('complemento', { length: 100 }),
+  bairro: varchar('bairro', { length: 100 }),
+  cidade: varchar('cidade', { length: 100 }),
+  uf: varchar('uf', { length: 2 }),
   created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+  updated_by: integer('updated_by').references(() => tenantUsuarios.id),
 })
 
 export const tenantUsuarios = pgTable('tenant_usuarios', {
