@@ -35,6 +35,8 @@ export const tenantUsuarios = pgTable('tenant_usuarios', {
   tenant_id: integer('tenant_id').notNull().references(() => tenants.id),
   email: varchar('email', { length: 255 }).notNull().unique(),
   senha_hash: varchar('senha_hash', { length: 255 }).notNull(),
+  nome: varchar('nome', { length: 255 }),
+  papel: varchar('papel', { length: 20 }).notNull().default('operador'),
   created_at: timestamp('created_at').defaultNow().notNull(),
 })
 

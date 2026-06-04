@@ -23,7 +23,9 @@ async function seed() {
   await db.insert(tenantUsuarios).values({
     tenant_id: tenant.id,
     email: 'admin@gestornfse.com',
+    nome: 'Administrador',
     senha_hash,
+    papel: 'admin',
   })
 
   console.log('Seed concluido!')

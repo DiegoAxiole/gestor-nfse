@@ -17,11 +17,11 @@ export const authService = {
     const valida = await bcrypt.compare(senha, usuario.senha_hash)
     if (!valida) throw new Error('Credenciais inválidas')
     const token = jwt.sign(
-      { tenantId: usuario.tenant_id, usuarioId: usuario.id, email: usuario.email },
+      { tenantId: usuario.tenant_id, usuarioId: usuario.id, email: usuario.email, papel: usuario.papel },
       jwtSecret,
       { expiresIn: '24h' },
     )
-    return { token, usuario: { id: usuario.id, email: usuario.email } }
+    return { token, usuario: { id: usuario.id, email: usuario.email, papel: usuario.papel } }
   },
 
   async cadastrarTenant(data: {
@@ -55,11 +55,13 @@ export const authService = {
     const [novoUsuario] = await db.insert(tenantUsuarios).values({
       tenant_id: novoTenant.id,
       email: data.email,
+      nome: data.nome,
       senha_hash: hash,
-    }).returning({ id: tenantUsuarios.id })
+      papel: 'admin',
+    }).returning({ id: tenantUsuarios.id, papel: tenantUsuarios.papel })
 
     const token = jwt.sign(
-      { tenantId: novoTenant.id, usuarioId: novoUsuario.id, email: data.email, primeiroAcesso: true },
+      { tenantId: novoTenant.id, usuarioId: novoUsuario.id, email: data.email, papel: novoUsuario.papel, primeiroAcesso: true },
       jwtSecret,
       { expiresIn: '24h' },
     )
