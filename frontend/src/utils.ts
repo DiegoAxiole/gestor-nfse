@@ -63,14 +63,16 @@ export function generateUUID(): string {
 }
 
 export function calculateRemainingDays(validadeFim: string): number {
+  if (!validadeFim) return -1
   try {
     const end = new Date(validadeFim);
+    if (isNaN(end.getTime())) return -1
     const today = new Date();
     const diffTime = end.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return isNaN(diffDays) ? 0 : diffDays;
+    return diffDays;
   } catch {
-    return 0;
+    return -1;
   }
 }
 

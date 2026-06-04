@@ -22,13 +22,14 @@ export default function DashboardView() {
   const totalCompaniesCount = empresas.length;
   
   const validCertificatesCount = empresas.filter(emp => {
-    if (!emp.certificado_caminho) return false;
+    if (!emp.certificado_caminho || !emp.validade_fim) return false;
     const days = calculateRemainingDays(emp.validade_fim);
     return days > 0;
   }).length;
 
   const expiredCertificatesCount = empresas.filter(emp => {
     if (!emp.certificado_caminho) return true;
+    if (!emp.validade_fim) return false;
     const days = calculateRemainingDays(emp.validade_fim);
     return days <= 0;
   }).length;
@@ -247,7 +248,7 @@ export default function DashboardView() {
     const docsCount = companyDocs.length;
     const valueSum = companyDocs.reduce((acc, d) => acc + d.valor_servicos, 0);
     
-    const hasCert = !!emp.certificado_caminho;
+    const hasCert = !!emp.certificado_caminho && !!emp.validade_fim;
     const daysLeft = hasCert ? calculateRemainingDays(emp.validade_fim) : -1;
 
     // Filter operations

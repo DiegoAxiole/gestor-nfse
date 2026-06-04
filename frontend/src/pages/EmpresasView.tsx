@@ -154,11 +154,19 @@ export default function EmpresasView() {
 
   // Helper to color/style the validity remaining days badge
   const renderValidadeBadge = (validadeFimStr: string, certificadoPathStr: string) => {
-    if (!certificadoPathStr) {
+    if (!certificadoPathStr || !validadeFimStr) {
+      if (!certificadoPathStr) {
+        return (
+          <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 uppercase">
+            <ShieldAlert className="w-3.5 h-3.5" />
+            Pendente Certificado
+          </span>
+        );
+      }
       return (
-        <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 uppercase">
-          <ShieldAlert className="w-3.5 h-3.5" />
-          Pendente Certificado
+        <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 uppercase">
+          <AlertTriangle className="w-3.5 h-3.5" />
+          Validade não extraída
         </span>
       );
     }
@@ -220,9 +228,9 @@ export default function EmpresasView() {
           <AnimatePresence>
             {empresas.map((emp) => {
               const isActive = emp.id === activeEmpresaId;
-              const hasCertificate = !!emp.certificado_caminho;
-              const daysRemaining = emp.certificado_caminho ? calculateRemainingDays(emp.validade_fim) : -1;
-              const isExpired = emp.certificado_caminho && daysRemaining <= 0;
+              const hasCertificate = !!emp.certificado_caminho && !!emp.validade_fim;
+              const daysRemaining = hasCertificate ? calculateRemainingDays(emp.validade_fim) : -1;
+              const isExpired = hasCertificate && daysRemaining <= 0;
 
               return (
                 <motion.div
