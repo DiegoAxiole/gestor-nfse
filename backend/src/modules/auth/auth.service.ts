@@ -34,8 +34,8 @@ export const authService = {
   }) {
     const documentoLimpo = data.documento.replace(/\D/g, '')
 
-    if (data.tipo === 'pj' && !cnpj.isValid(documentoLimpo)) throw new ValidationError('CNPJ inválido')
-    if (data.tipo === 'pf' && !cpf.isValid(documentoLimpo)) throw new ValidationError('CPF inválido')
+    if (data.tipo === 'pj' && !cnpj.isValid(data.documento)) throw new ValidationError('CNPJ inválido')
+    if (data.tipo === 'pf' && !cpf.isValid(data.documento)) throw new ValidationError('CPF inválido')
 
     const docExistente = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.documento, documentoLimpo)).limit(1)
     if (docExistente.length > 0) throw new ConflictError('CNPJ/CPF já cadastrado')
