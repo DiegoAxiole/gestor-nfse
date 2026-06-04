@@ -29,7 +29,7 @@ export const prestadorService = {
 
   async cadastrar(
     data: CadastrarPrestadorDTO,
-    certificadoPfx: Buffer,
+    certificadoPfx: Buffer | null,
     certificadoNome: string,
     codigoMunicipio: number,
     tenantId: number,
@@ -41,7 +41,7 @@ export const prestadorService = {
       tenant_id: tenantId,
       razao_social: data.razao_social,
       ambiente: data.ambiente,
-      certificado_pfx: certificadoPfx,
+      certificado_pfx: certificadoPfx ?? undefined,
       certificado_senha: data.certificado_senha,
       certificado_nome: certificadoNome,
     })

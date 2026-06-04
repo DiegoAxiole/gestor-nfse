@@ -51,7 +51,7 @@ export default function CadastroPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Slug</label>
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Identificador</label>
             <input type="text" value={slug} onChange={e => setSlug(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="minha-empresa" required />
           </div>
 

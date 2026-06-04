@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { db } from '../../db/db.js'
 import { tenants, tenantUsuarios } from '../../db/schema.js'
 import { eq } from 'drizzle-orm'
+import { ValidationError, ConflictError } from '../../shared/errors.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'
 
@@ -22,6 +23,12 @@ export const authService = {
   },
 
   async cadastrarTenant(nome: string, slug: string, email: string, senha: string) {
+    const slugExistente = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.slug, slug)).limit(1)
+    if (slugExistente.length > 0) throw new ConflictError('Identificador ja esta em uso')
+
+    const emailExistente = await db.select({ id: tenantUsuarios.id }).from(tenantUsuarios).where(eq(tenantUsuarios.email, email)).limit(1)
+    if (emailExistente.length > 0) throw new ConflictError('Email ja esta cadastrado')
+
     const senha_hash = await bcrypt.hash(senha, 10)
     const tenantRows = await db.insert(tenants).values({ nome, slug }).returning()
     const tenant = tenantRows[0]

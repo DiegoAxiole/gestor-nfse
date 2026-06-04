@@ -38,7 +38,7 @@ export const prestadorRepository = {
     tenant_id: number
     razao_social: string
     ambiente: string
-    certificado_pfx: Buffer
+    certificado_pfx?: Buffer
     certificado_senha: string
     certificado_nome: string
   }) {

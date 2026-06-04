@@ -20,10 +20,9 @@ export function criarController(codigoMunicipio: number) {
 
         const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined
         const file = files?.['certificado_pfx']?.[0]
-        if (!file) throw new ValidationError('certificado_pfx é obrigatorio')
 
-        const nomeCert = req.body.certificado_nome || file.originalname || ''
-        const result = await prestadorService.cadastrar(parsed.data, file.buffer, nomeCert, codigoMunicipio, req.tenantId!)
+        const nomeCert = req.body.certificado_nome || file?.originalname || ''
+        const result = await prestadorService.cadastrar(parsed.data, file?.buffer ?? null, nomeCert, codigoMunicipio, req.tenantId!)
         res.status(201).json(result)
       } catch (err) { next(err) }
     },

@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, timestamp, boolean, customType } from 'drizzle-orm/pg-core'
+import { pgTable, serial, varchar, text, integer, timestamp, boolean, customType, primaryKey } from 'drizzle-orm/pg-core'
 
 export const bytea = customType<{ data: Buffer }>({
   dataType() {
@@ -22,7 +22,7 @@ export const tenantUsuarios = pgTable('tenant_usuarios', {
 })
 
 export const prestadores = pgTable('prestadores', {
-  cnpj: varchar('cnpj', { length: 14 }).primaryKey(),
+  cnpj: varchar('cnpj', { length: 14 }).notNull(),
   tenant_id: integer('tenant_id').notNull().references(() => tenants.id),
   razao_social: varchar('razao_social', { length: 255 }).notNull(),
   ambiente: varchar('ambiente', { length: 20 }).notNull().default('Homologacao'),
@@ -31,7 +31,9 @@ export const prestadores = pgTable('prestadores', {
   certificado_validade: varchar('certificado_validade', { length: 20 }).default(''),
   certificado_nome: varchar('certificado_nome', { length: 255 }).default(''),
   created_at: timestamp('created_at').defaultNow().notNull(),
-})
+}, (table) => ({
+  pk: primaryKey({ columns: [table.tenant_id, table.cnpj] }),
+}))
 
 export const documentos = pgTable('documentos', {
   id: serial('id').primaryKey(),
