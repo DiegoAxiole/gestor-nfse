@@ -27,7 +27,7 @@ export const tenants = pgTable('tenants', {
   uf: varchar('uf', { length: 2 }),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
-  updated_by: integer('updated_by').references(() => tenantUsuarios.id),
+  updated_by: integer('updated_by'),
 })
 
 export const tenantUsuarios = pgTable('tenant_usuarios', {
