@@ -15,6 +15,7 @@ import { criarRouterDocumentos } from './modules/documentos/documentos.routes.js
 import { criarRouterOperacoes } from './modules/operacoes/operacoes.routes.js'
 import { criarRouterTasks } from './modules/tasks/tasks.routes.js'
 import { criarRouterAuth } from './modules/auth/auth.routes.js'
+import { criarRouterTenant } from './modules/auth/tenant.routes.js'
 import { errorHandler } from './shared/error-handler.js'
 import { authMiddleware } from './shared/auth.middleware.js'
 
@@ -97,6 +98,7 @@ export async function createApp() {
   router.use('/api/v1/documentos', authMiddleware, criarRouterDocumentos())
   router.use('/api/v1/operacoes', authMiddleware, criarRouterOperacoes())
   router.use('/api/v1/auth', criarRouterAuth())
+  router.use('/api/v1/tenant', authMiddleware, criarRouterTenant())
   router.use('/api/v1/tasks', authMiddleware, criarRouterTasks())
 
   app.use(router)
