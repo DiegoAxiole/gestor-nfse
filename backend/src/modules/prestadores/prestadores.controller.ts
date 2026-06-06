@@ -3,6 +3,7 @@ import type { ZodIssue } from 'zod'
 import { prestadorService } from './prestadores.service.js'
 import { CadastrarPrestadorSchema, AtualizarPrestadorSchema, UploadCertificadoSchema } from './prestadores.dto.js'
 import { ValidationError } from '../../shared/errors.js'
+import { planLimitsService } from '../plan-limits/plan-limits.service.js'
 
 export function criarController(codigoMunicipio: number) {
   return {
@@ -17,6 +18,16 @@ export function criarController(codigoMunicipio: number) {
       try {
         const parsed = CadastrarPrestadorSchema.safeParse(req.body)
         if (!parsed.success) throw new ValidationError(parsed.error.issues.map((e: ZodIssue) => e.message).join('; '))
+
+        const limits = await planLimitsService.resolveLimits(req.tenantId!)
+        const current = await planLimitsService.countPrestadores(req.tenantId!)
+        if (current >= limits.prestadores_max) {
+          res.status(403).json({
+            detail: `Limite do plano excedido (${current}/${limits.prestadores_max}). Faça upgrade para aumentar.`,
+            code: 'PLAN_LIMIT_REACHED', current, max: limits.prestadores_max,
+          })
+          return
+        }
 
         const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined
         const file = files?.['certificado_pfx']?.[0]

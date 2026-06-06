@@ -4,18 +4,7 @@
 
 Gestão de Notas Fiscais de Serviço Eletrônica — frontend React + backend Express (Node.js) com integração SEFAZ.
 
-Banco SQLite local (não precisa de servidor de banco). Portátil: não instala nada no sistema.
-
----
-
-## Para usuários (instalação zero)
-
-1. **Baixe** o arquivo `gestor-nfse-vX.X.X.zip` da seção [Releases](https://github.com/seu-usuario/gestor-nfse/releases)
-2. **Extraia** em qualquer pasta
-3. **Execute** `start.bat` (dois cliques)
-4. O navegador abre em `http://localhost:8001`
-
-Pronto. O Node.js portátil já vem dentro do zip. Nada é instalado no sistema.
+Banco PostgreSQL via Drizzle ORM (Supabase).
 
 ---
 
@@ -24,6 +13,7 @@ Pronto. O Node.js portátil já vem dentro do zip. Nada é instalado no sistema.
 ### Pré-requisitos
 
 - [Node.js 22+](https://nodejs.org)
+- PostgreSQL (ou Supabase)
 - Git
 
 ### Setup
@@ -31,39 +21,41 @@ Pronto. O Node.js portátil já vem dentro do zip. Nada é instalado no sistema.
 ```bash
 git clone <seu-repositorio>
 cd gestor-nfse
-.\install.bat
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-O script baixa o Node.js portátil (se não tiver), instala dependências, compila e inicia.
+Configure as variáveis de ambiente no `backend/.env`:
 
-### Manual
+```env
+DATABASE_URL=postgresql://usuario:senha@host:5432/gestor_nfse
+JWT_SECRET=seu-segredo-aqui
+AMBIENTE=Homologacao
+CODIGO_MUNICIPIO=1001058
+```
+
+Sincronize o schema e crie o admin:
 
 ```bash
-# Backend
 cd backend
-npm install
-npx prisma generate
+npm run db:push
+npm run seed
+```
+
+### Dev
+
+```bash
+# Backend (terminal 1)
+cd backend
 npm run dev          # http://localhost:8001
 
 # Frontend (terminal 2)
 cd frontend
-npm install
 npm run dev          # http://localhost:3000 (proxy /api → :8001)
 ```
 
 - **Dev**: http://localhost:3000 (hot-reload)
 - **Prod**: http://localhost:8001 (backend serve frontend buildado)
-- **API Docs**: http://localhost:8001/docs
-
----
-
-## Publicar uma release
-
-```cmd
-scripts\build-release.bat
-```
-
-Gera `releases\gestor-nfse-vX.X.X.zip` com tudo incluso (backend compilado, frontend compilado, Node.js portátil, dependências de produção). Basta subir o zip no GitHub Releases.
 
 ---
 
@@ -72,13 +64,24 @@ Gera `releases\gestor-nfse-vX.X.X.zip` com tudo incluso (backend compilado, fron
 ```
 gestor-nfse/
 ├── backend/
-│   ├── src/           TypeScript (Express + Prisma + rotas)
-│   ├── dist/          Compilado + frontend buildado
-│   ├── prisma/        Schema do banco
-│   └── data/          SQLite (auto-criado na 1ª execução)
-├── frontend/          React + TypeScript + Vite
-├── scripts/           Utilitários (build-release.bat)
-├── .tools/            Node.js portátil (baixado pelo install.bat)
-├── start.bat          Iniciar servidor (modo produção)
-└── install.bat        Setup completo (dev)
+│   ├── src/           TypeScript (Express + Drizzle + rotas)
+│   ├── dist/          Compilado
+│   └── public/        Frontend buildado (gerado pelo Vite)
+├── frontend/          React 19 + TypeScript + Vite 6 + Tailwind CSS v4
+├── dev.bat            Iniciar servidores dev (Windows)
+├── dev.ps1            Iniciar servidor único (PowerShell)
+└── AGENTS.md          Instruções para agentes OpenCode
 ```
+
+---
+
+## Publicar uma release
+
+O CI gera releases automaticamente ao criar uma tag `v*`:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Veja `.github/workflows/release.yml`.

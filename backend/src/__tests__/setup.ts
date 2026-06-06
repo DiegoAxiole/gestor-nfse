@@ -1,4 +1,3 @@
-import { beforeAll, afterAll } from 'vitest'
 import { createApp } from '../app.js'
 import type { Express } from 'express'
 
@@ -11,7 +10,3 @@ export async function getApp(): Promise<Express> {
   }
   return app
 }
-
-beforeAll(async () => {
-  await getApp()
-})

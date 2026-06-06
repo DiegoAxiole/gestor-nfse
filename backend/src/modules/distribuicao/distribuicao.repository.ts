@@ -1,6 +1,15 @@
+import { appendFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { db } from '../../db/db.js'
-import { operacoes, backgroundTasks, prestadores, documentos } from '../../db/schema.js'
+import { operacoes, backgroundTasks, prestadores, documentos, automacaoLogs } from '../../db/schema.js'
 import { eq, and, desc, inArray, sql } from 'drizzle-orm'
+
+function extrairDataEmissao(xml: string): string {
+  const re = /<[^:]*:?(dhEmi|dCompet|dhProc)[^>]*>([^<]+)</
+  const m = xml.match(re)
+  if (m) return m[2].slice(0, 10)
+  return ''
+}
 
 export const distribuicaoRepository = {
   async buscarUltimoNsu(cnpj: string, tenantId: number): Promise<string> {
@@ -74,20 +83,35 @@ export const distribuicaoRepository = {
     return rows[0].id
   },
 
-  async inserirDocumentos(docs: Array<{ chaveAcesso: string; nsu: string | number; xml: string }>, cnpj: string, operacaoId: number, tenantId: number) {
-    for (const doc of docs) {
+  async inserirDocumentos(docs: Array<{ chaveAcesso: string; nsu: string | number; xml: string; dataHoraGeracao?: string }>, cnpj: string, operacaoId: number, tenantId: number) {
+    if (docs.length === 0) return
+
+    const valores = docs.map(d => ({
+      chave_acesso: d.chaveAcesso,
+      prestador_cnpj: cnpj,
+      tenant_id: tenantId,
+      operacao_id: operacaoId,
+      nsu: String(d.nsu),
+      xml_nfse: d.xml,
+      data_emissao: extrairDataEmissao(d.xml) || (d.dataHoraGeracao ?? '').slice(0, 10),
+    }))
+
+    try {
+      await db.insert(documentos).values(valores).onConflictDoNothing()
+    } catch (err: any) {
+      const msg = `[${new Date().toISOString()}] Erro ao inserir lote de ${docs.length} documentos: ${err?.message ?? err}`
+      console.error(msg)
       try {
-        await db.insert(documentos).values({
-          chave_acesso: doc.chaveAcesso,
-          prestador_cnpj: cnpj,
+        await db.insert(automacaoLogs).values({
           tenant_id: tenantId,
-          operacao_id: operacaoId,
-          nsu: String(doc.nsu),
-          xml_nfse: doc.xml,
+          prestador_cnpj: cnpj,
+          tipo: 'erro_inserir_lote',
+          mensagem: msg.slice(0, 1000),
         })
-      } catch (err) {
-        console.error(`Erro ao inserir documento ${doc.chaveAcesso}:`, err)
-      }
+      } catch { /* fallback */ }
+      try {
+        appendFileSync(join(process.cwd(), 'data', 'distribuicao.log'), msg + '\n')
+      } catch { /* fallback */ }
     }
   },
 }

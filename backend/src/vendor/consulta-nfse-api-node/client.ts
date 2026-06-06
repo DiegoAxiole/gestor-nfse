@@ -317,17 +317,20 @@ export class NfseClient {
     force?: boolean
   }): Promise<SincronizarResult> {
     const nsu = options?.nsu ?? 0
-    const destino = options?.destino ?? 'xmls'
+    const destino = options?.destino
 
     const resposta = await this.consultarPorNsu(nsu, undefined, options?.force)
 
     const documentos: DownloadResult[] = resposta.loteDfe.map((doc) => {
       const xml = this.descompactarXml(doc.xmlCompactado)
-      const data = new Date(doc.dataHoraGeracao)
-      const pasta = `${data.getFullYear()}.${String(data.getMonth() + 1).padStart(2, '0')}`
-      mkdirSync(join(destino, pasta), { recursive: true })
-      const arquivo = join(destino, pasta, `${doc.chaveAcesso}.xml`)
-      writeFileSync(arquivo, xml, 'utf-8')
+
+      if (destino) {
+        const data = new Date(doc.dataHoraGeracao)
+        const pasta = `${data.getFullYear()}.${String(data.getMonth() + 1).padStart(2, '0')}`
+        mkdirSync(join(destino, pasta), { recursive: true })
+        const arquivo = join(destino, pasta, `${doc.chaveAcesso}.xml`)
+        writeFileSync(arquivo, xml, 'utf-8')
+      }
 
       return {
         nsu: doc.nsu,

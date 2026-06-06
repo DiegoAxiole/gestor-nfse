@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { writeFileSync, rmSync } from 'node:fs'
+import { writeFileSync, rmSync, appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
@@ -101,6 +101,11 @@ export function criarRouterDistribuicao(codigoMunicipio: number): Router {
             }),
           })
         } catch (err: any) {
+          const msg = `[${new Date().toISOString()}] Task ${taskId} erro: ${err?.message ?? err}`
+          console.error(msg)
+          try {
+            appendFileSync(join(process.cwd(), 'data', 'distribuicao.log'), msg + '\n')
+          } catch { /* fallback */ }
           await distribuicaoRepository.atualizarTask(taskId, {
             status: 'error',
             erro_texto: err.message,

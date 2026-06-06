@@ -28,10 +28,6 @@ jobs:
         working-directory: backend
         run: npm install --no-progress
 
-      - name: Generate Prisma client
-        working-directory: backend
-        run: npx prisma generate
-
       - name: Build backend
         working-directory: backend
         run: npm run build
@@ -70,12 +66,10 @@ jobs:
           }
           Copy-Item ".tools\node-v24.16.0-win-x64" "$stage\.tools\" -Recurse -Force
 
-          # Backend (built + node_modules + prisma)
+          # Backend (built + node_modules)
           Copy-Item "backend\dist" "$stage\backend\dist\" -Recurse -Force
           Copy-Item "backend\node_modules" "$stage\backend\node_modules\" -Recurse -Force
-          Copy-Item "backend\prisma" "$stage\backend\prisma\" -Recurse -Force
           Copy-Item "backend\package.json" "$stage\backend\" -Force
-          if (Test-Path "backend\prisma.config.ts") { Copy-Item "backend\prisma.config.ts" "$stage\backend\" -Force }
 
           # data dir
           New-Item -ItemType Directory -Path "$stage\data" -Force
@@ -86,7 +80,7 @@ jobs:
           if (Test-Path "LICENSE") { Copy-Item "LICENSE" "$stage\" -Force }
 
           # .env template
-          Set-Content "$stage\backend\.env" "DATABASE_URL=`"file:../data/nfse.sqlite`""
+          Set-Content "$stage\backend\.env" "DATABASE_URL=postgresql://usuario:senha@host:5432/gestor_nfse"
 
           # Zip
           $version = "${{ github.ref_name }}"

@@ -1,78 +1,86 @@
 # AGENTS.md — Gestor NFSe
 
-NFSe manager: **Express (Node.js) backend** + **React frontend**. Drizzle ORM + PostgreSQL.
+NFSe manager: **Express (Node.js) backend** + **React frontend**. Drizzle ORM + PostgreSQL (Supabase). Self-managed auth (bcrypt + JWT).
 
-## Project structure
+**⚠️ Stale frontend routes:** `frontend/src/api.ts` references `/automacao/*` endpoints, but `backend/src/modules/automacao/` is empty and routes are **not** registered in `app.ts`.
+
+## Architecture
 
 ```
-frontend/          React 19 + TypeScript + Vite 6 + Tailwind CSS v4
 backend/
-├── src/
-│   ├── index.ts        Express entrypoint
-│   ├── app.ts          Express app factory
-│   ├── config.ts       Env-based config
-│   ├── validators.ts   CNPJ / chave de acesso validation
-│   ├── modules/        Route modules (prestadores, config, auth, distribuicao, documentos, operacoes, automacao, tasks)
-│   ├── shared/         Auth middleware, error handler
-│   ├── db/             Drizzle schema + DB client
-│   └── seed.ts         Initial tenant + admin user
-├── data/               SQLite DB (auto-created on first run)
-├── dist/               TypeScript compile output (tsc)
-├── public/             Frontend build output (Vite)
-├── render.yaml         Render deploy config
-└── node_modules/
+  src/
+    index.ts, app.ts, config.ts, validators.ts, seed.ts
+    modules/    auth, prestadores, config, distribuicao, documentos,
+                operacoes, tasks, subscription, usuarios, automacao (empty)
+    shared/     auth.middleware.ts, error-handler.ts, errors.ts
+    db/         db.ts (drizzle), schema.ts (10 tables), migrations/
+frontend/       React 19 + Vite 6 + Tailwind CSS v4 + React Router v7
 ```
+
+Backend: `backend/src/index.ts:7` — port 8001, binds `127.0.0.1`.
+Frontend: `frontend/vite.config.ts` — port 3000, proxies `/api` → `:8001`, `@/` alias → `frontend/` root.
+
+## Recent sessions
+
+- **2026-06-05:** ConfiguracoesView deleted; technical settings (ambiente, codigo_municipio, LGPD toggle) merged into PerfilView. Sidebar now shows logged-in user (avatar + email + papel badge). `Backend GET/PUT /api/v1/config` preserved for distribution modules. Login form has `autoComplete` attributes.
 
 ## Commands
 
 | Context | Command |
 |---------|---------|
 | Backend deps | `npm install` (in `backend/`) |
-| DB generate | `npm run db:generate` (generates Drizzle migration) |
-| DB migrate | `npm run db:migrate` (applies migration) |
-| DB push | `npm run db:push` (syncs schema directly) |
-| Seed | `npm run seed` (creates initial admin tenant) |
-| Backend dev | `npm run dev` (runs `tsx watch src/index.ts`) |
-| Backend build | `npm run build` (runs `tsc`, outputs to `backend/dist/`) |
+| Backend dev | `npm run dev` (`tsx watch src/index.ts`) |
+| Backend build | `npm run build` (`tsc`, outputs to `backend/dist/`) |
 | Backend prod | `npm run start` (`node dist/index.js`) |
-| Typecheck | `npm run typecheck` (runs `tsc --noEmit`) |
+| Backend typecheck | `npm run typecheck` (`tsc --noEmit`) |
+| Backend test | `npm run test` (vitest — 71 tests, 9 suites) |
+| DB generate | `npm run db:generate` (drizzle-kit generate) |
+| DB migrate | `npm run db:migrate` |
+| DB push | `npm run db:push` (sync schema directly) |
+| Seed | `npm run seed` (admin@gestornfse.com / admin123, 30-day trial) |
 | Frontend deps | `npm install` (in `frontend/`) |
-| Frontend dev | `npm run dev` (port 3000, proxies `/api` → `:8001`) |
-| Frontend build | `npm run build` (Vite, outputs to `backend/public/`) |
-| Frontend typecheck | `npm run lint` (runs `tsc --noEmit`) |
-| One-click install | `install.bat` (downloads portable Node, installs deps, builds, starts) |
-| Start server | `start.bat` (auto-runs npm install + build if needed) |
+| Frontend dev | `npm run dev` (port 3000) |
+| Frontend build | `npm run build` (outputs to `backend/public/`) |
+| Frontend typecheck | `npm run lint` (`tsc --noEmit`) |
+| Dev servers (both) | `dev.bat` (Windows cmd) or `dev.ps1` (PowerShell) — kills old processes, starts both |
+
+Run `npm run seed` **after** DB push to create the admin tenant.
 
 ## API
 
-All routes under `/api/v1/`. Docs at `http://localhost:8001/docs` (auto-generated).
+All routes under `/api/v1/`. JWT required except `/auth/*` and `/health`.
+Subscription middleware returns **402** if expired (blocks all routes except `/auth`, `/subscription`).
 
-- **Auth**: `POST /api/v1/auth/login`, `POST /api/v1/auth/cadastrar`
-- **Prestadores**: CRUD at `/api/v1/prestadores` (multipart/form-data with PFX cert)
-- **Distribuição**: `POST /api/v1/distribuicao/consultar` (returns task_id for polling)
-- **Tasks**: `GET /api/v1/tasks/{task_id}` (poll background task status)
-- **Documentos**: `GET /api/v1/documentos`, `GET .../{chave}/xml|pdf`, `GET .../download-zip`
-- **Automação**: `POST /api/v1/automacao/agendar`, `GET/DELETE /.../agendamentos`, `GET /.../logs`
-- **Operações**: `GET /api/v1/operacoes`
-- **Config**: `GET/PUT /api/v1/config`
-- **Health**: `GET /health`
-
-## Database
-
-- PostgreSQL via Drizzle ORM on Supabase
-- Multi-tenant: all tables scoped by `tenant_id`
-- Auth: bcrypt + JWT (self-managed, not Supabase Auth)
-- PFX certificates stored as bytea in `prestadores` table
-- Background tasks polled by frontend via `GET /tasks/{id}`
+| Module | Routes |
+|--------|--------|
+| **Health** | `GET /health` |
+| **Auth** | `POST /api/v1/auth/login`, `POST /api/v1/auth/cadastrar` |
+| **Prestadores** | `GET/POST /api/v1/prestadores` (POST: multipart c/ PFX), `GET/PUT/DELETE /.../:cnpj` |
+| **Config** | `GET/PUT /api/v1/config` |
+| **Tenant** | `GET/PUT /api/v1/tenant` |
+| **Usuários** | `GET/POST /api/v1/usuarios`, `PATCH /.../:id/papel`, `DELETE /.../:id` (admin-only) |
+| **Distribuição** | `POST /api/v1/distribuicao/consultar` → returns `task_id` |
+| **Tasks** | `GET /api/v1/tasks/{task_id}` (poll background task) |
+| **Documentos** | `GET /api/v1/documentos`, `GET .../{chave}/xml\|pdf`, `GET .../download-zip` |
+| **Subscription** | `GET /api/v1/subscription`, `POST /.../cancelar`, `POST /.../upgrade` |
+| **Operações** | `GET /api/v1/operacoes` |
 
 ## Key conventions
 
-- Routes use **dependency injection** via factory functions (`criarRouter*`) — receive `DatabaseManager` instance
-- **Auth required** for all routes except `/api/v1/auth/*` and `/health` (JWT middleware)
-- CNPJ validation (14 digits) via `validators.ts`
-- `config.toml` is gitignored; no `.example` file
-- Frontend uses `@/` import alias → `frontend/`
-- LGPD (data privacy) masking in `frontend/src/utils.ts`
-- Certificate upload uses `multipart/form-data` (not JSON)
-- SEFAZ integration via `vendor/consulta-nfse-api-node`
-- No tests exist
+- **Module pattern:** factory functions (`criarRouter*`) called from `app.ts` — receive config values (e.g. `codigo_municipio`)
+- **Four-layer pattern** in `prestadores/`: routes → controller → service → repository
+- **Zod** request validation in route/controller files (Zod v4)
+- **Custom error hierarchy:** `AppError` → `NotFoundError` (404), `ValidationError` (422), `ConflictError` (409)
+- **Auth:** `authMiddleware` sets `req.tenantId`, `req.usuarioId`, `req.papel`; `adminMiddleware` checks `papel === 'admin'`
+- **CNPJ** digits-only validation (14 chars), chave de acesso validation (44 or 50 digits) — `validators.ts`
+- **Multer** memory storage for PFX certificate uploads (`multipart/form-data`, not JSON)
+- **PFX certificates** stored as `bytea` in `prestadores` table
+- **Multi-tenant:** all tables scoped by `tenant_id`
+- **LGPD masking utils:** `formatCnpj`, `maskRazao`, `maskChave`, `maskEmail` in `frontend/src/utils.ts`
+- **EOL:** LF for `.ts/.tsx/.json/.yml/.md`, CRLF for `.bat/.ps1/.cmd` (via `.gitattributes`)
+- **HTTP logging** to `data/http.log` (sensitive fields redacted)
+- **Seed** creates: admin tenant + `admin@gestornfse.com` / `admin123` + 30-day trial subscription
+- `scripts/`, `start.bat`, `install.bat` are generated by CI, not in repo
+- `data/` is gitignored, created at runtime for logs
+- **Mandatory tools:** always use `codegraph` (explore, search, impact, callees/callers) and `agentmemory` (save, recall, lessons) for context and continuity
+- **Mandatory workflow:** `fluxo_de_trabalho_obrigatoiro.md` at root — phased process for feature development

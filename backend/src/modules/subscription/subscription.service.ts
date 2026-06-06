@@ -81,6 +81,7 @@ export const subscriptionService = {
         periodo_fim: periodoFim,
         asaas_customer_id: customerId,
         asaas_subscription_id: result.subscriptionId,
+        cancelado_em: null,
         updated_at: new Date(),
       })
       .where(eq(subscriptions.tenant_id, tenantId))

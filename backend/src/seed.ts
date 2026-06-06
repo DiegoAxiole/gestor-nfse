@@ -30,7 +30,7 @@ async function seed() {
   })
 
   await db.insert(planLimits).values([
-    { plano: 'trial', prestadores_max: 1, documentos_mes_max: 50, usuarios_max: 2, danfse: true, lote_zip: true },
+    { plano: 'trial', prestadores_max: 5, documentos_mes_max: 100, usuarios_max: 10, danfse: true, lote_zip: true },
     { plano: 'basico', prestadores_max: 2, documentos_mes_max: 100, usuarios_max: 3, danfse: true, lote_zip: false },
     { plano: 'profissional', prestadores_max: 10, documentos_mes_max: 2000, usuarios_max: 10, danfse: true, lote_zip: true },
   ])

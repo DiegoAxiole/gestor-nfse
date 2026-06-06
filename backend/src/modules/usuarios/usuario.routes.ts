@@ -3,8 +3,8 @@ import type { Request, Response } from 'express'
 import { z } from 'zod'
 import { authMiddleware, adminMiddleware } from '../../shared/auth.middleware.js'
 import { usuarioService } from './usuario.service.js'
-import { NotFoundError, ConflictError } from '../../shared/errors.js'
-import { planLimitMiddleware } from '../plan-limits/plan-limits.middleware.js'
+import { NotFoundError, ConflictError, ValidationError } from '../../shared/errors.js'
+import { planLimitsService } from '../plan-limits/plan-limits.service.js'
 
 const schemaCriar = z.object({
   email: z.string().email(),
@@ -31,9 +31,20 @@ export function criarRouterUsuarios(): Router {
     }
   })
 
-  router.post('/', planLimitMiddleware('usuarios_max'), async (req: Request, res: Response) => {
+  router.post('/', async (req: Request, res: Response) => {
     try {
       const body = schemaCriar.parse(req.body)
+      const limits = await planLimitsService.resolveLimits(req.tenantId!)
+      const current = await planLimitsService.countUsuarios(req.tenantId!)
+      if (current >= limits.usuarios_max) {
+        res.status(403).json({
+          detail: `Limite do plano excedido (${current}/${limits.usuarios_max}). Faça upgrade para aumentar.`,
+          code: 'PLAN_LIMIT_REACHED',
+          current,
+          max: limits.usuarios_max,
+        })
+        return
+      }
       const usuario = await usuarioService.criar(req.tenantId!, body)
       res.status(201).json({ data: usuario })
     } catch (err) {

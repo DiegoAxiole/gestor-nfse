@@ -57,7 +57,7 @@ export const prestadores = pgTable('prestadores', {
 export const documentos = pgTable('documentos', {
   id: serial('id').primaryKey(),
   tenant_id: integer('tenant_id').notNull().references(() => tenants.id),
-  chave_acesso: varchar('chave_acesso', { length: 44 }).notNull().unique(),
+  chave_acesso: varchar('chave_acesso', { length: 50 }).notNull().unique(),
   prestador_cnpj: varchar('prestador_cnpj', { length: 14 }).notNull(),
   operacao_id: integer('operacao_id'),
   nsu: varchar('nsu', { length: 20 }).default(''),
@@ -98,7 +98,7 @@ export const backgroundTasks = pgTable('background_tasks', {
   id: varchar('id', { length: 36 }).primaryKey(),
   tenant_id: integer('tenant_id').notNull().references(() => tenants.id),
   tipo: varchar('tipo', { length: 50 }).default(''),
-  chave_acesso: varchar('chave_acesso', { length: 44 }),
+  chave_acesso: varchar('chave_acesso', { length: 50 }),
   cnpj: varchar('cnpj', { length: 14 }),
   status: varchar('status', { length: 20 }).default('pending'),
   progresso: integer('progresso').default(0),

@@ -40,6 +40,9 @@ export default function EmpresasView() {
   const [ambiente, setAmbiente] = useState<"Homologacao" | "Producao">("Homologacao");
   const [municipio, setMunicipio] = useState("3550308");
 
+  const [showCnpj, setShowCnpj] = useState(false);
+  const [showRazao, setShowRazao] = useState(false);
+
   // Saving state
   const [saving, setSaving] = useState(false);
 
@@ -58,6 +61,8 @@ export default function EmpresasView() {
     setCnpj("");
     setCertificadoPath("");
     setSenha("");
+    setShowCnpj(false);
+    setShowRazao(false);
     setCertFileName("");
     setCertFile(null);
     setCertParseStatus("idle");
@@ -75,6 +80,8 @@ export default function EmpresasView() {
     setEditingEmpresa(emp);
     setRazao(emp.razao_social);
     setCnpj(emp.cnpj);
+    setShowCnpj(false);
+    setShowRazao(false);
     setCertificadoPath(emp.certificado_caminho);
     setSenha(emp.certificado_senha || "");
     setValidadeFim(emp.validade_fim ? emp.validade_fim.split("T")[0] : "");
@@ -275,7 +282,7 @@ export default function EmpresasView() {
                         <div className="flex items-center gap-1.5 font-mono text-[10.5px]">
                           <Key className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                           <span className="truncate max-w-[200px]" title={emp.certificado_caminho || "Pendente"}>
-                            Certificado: {emp.certificado_caminho ? emp.certificado_caminho.split("/").pop() : <em className="text-rose-400">Nenhum</em>}
+                            Certificado: {emp.certificado_caminho ? (lgpdAtivo ? maskRazao(emp.certificado_caminho.split("/").pop() ?? "") : emp.certificado_caminho.split("/").pop()) : <em className="text-rose-400">Nenhum</em>}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -460,17 +467,25 @@ export default function EmpresasView() {
                       <span className="text-[8px] text-amber-400 font-medium">Envie o certificado primeiro</span>
                     )}
                   </label>
-                  <input
-                    type="text"
-                    value={razao}
-                    onChange={(e) => setRazao(e.target.value)}
-                    placeholder={!editingEmpresa ? "Auto-preenchido após envio do .pfx" : "E.g., NOVA EMPRESA LTDA"}
-                    disabled={!editingEmpresa && certParseStatus !== "success"}
-                    className={`w-full p-2 bg-slate-950 border border-slate-850 rounded-lg text-slate-200 focus:outline-hidden focus:border-slate-750 font-medium ${
-                      !editingEmpresa && certParseStatus !== "success" ? "opacity-40 cursor-not-allowed" : ""
-                    }`}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={lgpdAtivo && !showRazao && razao ? maskRazao(razao) : razao}
+                      onChange={(e) => setRazao(e.target.value)}
+                      placeholder={!editingEmpresa ? "Auto-preenchido após envio do .pfx" : "E.g., NOVA EMPRESA LTDA"}
+                      disabled={!editingEmpresa && certParseStatus !== "success"}
+                      className={`w-full p-2 bg-slate-950 border border-slate-850 rounded-lg text-slate-200 focus:outline-hidden focus:border-slate-750 font-medium ${
+                        !editingEmpresa && certParseStatus !== "success" ? "opacity-40 cursor-not-allowed" : ""
+                      } ${lgpdAtivo && razao ? "pr-10" : ""}`}
+                      required
+                    />
+                    {lgpdAtivo && razao && (
+                      <button type="button" onClick={() => setShowRazao(!showRazao)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer">
+                        {showRazao ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* cnpj — disabled for new empresa until cert uploaded */}
@@ -483,17 +498,25 @@ export default function EmpresasView() {
                       <span className="text-[8px] text-amber-400 font-medium">Envie o certificado primeiro</span>
                     )}
                   </label>
-                  <input
-                    type="text"
-                    value={cnpj}
-                    onChange={(e) => setCnpj(e.target.value.replace(/\D/g, "").slice(0, 14))}
-                    placeholder={!editingEmpresa ? "Auto-preenchido após envio do .pfx" : "99999999000199"}
-                    disabled={!editingEmpresa && certParseStatus !== "success"}
-                    className={`w-full p-2 bg-slate-950 border border-slate-850 rounded-lg font-mono text-slate-200 focus:outline-hidden focus:border-slate-750 ${
-                      !editingEmpresa && certParseStatus !== "success" ? "opacity-40 cursor-not-allowed" : ""
-                    }`}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={lgpdAtivo && !showCnpj && cnpj ? formatCnpj(cnpj, true) : cnpj}
+                      onChange={(e) => setCnpj(e.target.value.replace(/\D/g, "").slice(0, 14))}
+                      placeholder={!editingEmpresa ? "Auto-preenchido após envio do .pfx" : "99999999000199"}
+                      disabled={!editingEmpresa && certParseStatus !== "success"}
+                      className={`w-full p-2 bg-slate-950 border border-slate-850 rounded-lg font-mono text-slate-200 focus:outline-hidden focus:border-slate-750 ${
+                        !editingEmpresa && certParseStatus !== "success" ? "opacity-40 cursor-not-allowed" : ""
+                      } ${lgpdAtivo && cnpj ? "pr-10" : ""}`}
+                      required
+                    />
+                    {lgpdAtivo && cnpj && (
+                      <button type="button" onClick={() => setShowCnpj(!showCnpj)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer">
+                        {showCnpj ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* expiry limit */}
