@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1780538754814,
-      "tag": "0000_tranquil_boom_boom",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1780546089862,
-      "tag": "0001_burly_wallop",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780600000000,
-      "tag": "0002_serious_purple_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1780580000000,
-      "tag": "0003_busy_angel",
+      "when": 1780716835483,
+      "tag": "0000_sour_skreet",
       "breakpoints": true
     }
   ]

@@ -134,6 +134,10 @@ export const subscriptions = pgTable('subscriptions', {
   cancelado_em: timestamp('cancelado_em'),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
+  asaas_customer_id: varchar('asaas_customer_id', { length: 100 }),
+  asaas_subscription_id: varchar('asaas_subscription_id', { length: 100 }),
+  documentos_este_mes: integer('documentos_este_mes').notNull().default(0),
+  documentos_mes_ref: varchar('documentos_mes_ref', { length: 7 }),
 })
 
 export const automacaoLogs = pgTable('automacao_logs', {
@@ -143,4 +147,36 @@ export const automacaoLogs = pgTable('automacao_logs', {
   tipo: varchar('tipo', { length: 30 }).default(''),
   mensagem: text('mensagem').default(''),
   created_at: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const planLimits = pgTable('plan_limits', {
+  id: serial('id').primaryKey(),
+  plano: varchar('plano', { length: 50 }).notNull().unique(),
+  prestadores_max: integer('prestadores_max').notNull().default(1),
+  documentos_mes_max: integer('documentos_mes_max').notNull().default(50),
+  usuarios_max: integer('usuarios_max').notNull().default(2),
+  danfse: boolean('danfse').notNull().default(true),
+  lote_zip: boolean('lote_zip').notNull().default(false),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const tenantOverrides = pgTable('tenant_overrides', {
+  id: serial('id').primaryKey(),
+  tenant_id: integer('tenant_id').notNull().unique().references(() => tenants.id),
+  prestadores_max: integer('prestadores_max'),
+  documentos_mes_max: integer('documentos_mes_max'),
+  usuarios_max: integer('usuarios_max'),
+  danfse: boolean('danfse'),
+  lote_zip: boolean('lote_zip'),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+  updated_by: integer('updated_by').references(() => tenantUsuarios.id),
+})
+
+export const asaasWebhooks = pgTable('asaas_webhooks', {
+  id: serial('id').primaryKey(),
+  event: varchar('event', { length: 100 }).notNull(),
+  asaas_id: varchar('asaas_id', { length: 100 }),
+  subscription_id: integer('subscription_id').references(() => subscriptions.id),
+  raw_body: text('raw_body'),
+  processed_at: timestamp('processed_at').defaultNow().notNull(),
 })
