@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from './AuthContext'
 import { Link } from 'react-router-dom'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
+  const [showSenha, setShowSenha] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -33,7 +34,7 @@ export default function LoginPage() {
           <span className="text-lg font-bold text-white">Gestor NFSe</span>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-5 shadow-xl">
+        <form onSubmit={handleSubmit} autoComplete="on" className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-5 shadow-xl">
           <h1 className="text-sm font-bold text-white text-center">Entrar</h1>
 
           {error && (
@@ -47,24 +48,34 @@ export default function LoginPage() {
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Email</label>
             <input
               type="email"
+              name="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               placeholder="seu@email.com"
+              autoComplete="username"
               required
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Senha</label>
-            <input
-              type="password"
-              value={senha}
-              onChange={e => setSenha(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-              placeholder="••••••••"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showSenha ? 'text' : 'password'}
+                name="senha"
+                value={senha}
+                onChange={e => setSenha(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg pr-10 px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                required
+              />
+              <button type="button" onClick={() => setShowSenha(!showSenha)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer">
+                {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <button

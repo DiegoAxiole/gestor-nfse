@@ -9,7 +9,6 @@ import EmpresasView from './pages/EmpresasView'
 import DownloadLoteView from './pages/DownloadLoteView'
 import GerarDanfeView from './pages/GerarDanfeView'
 import HistoricoView from './pages/HistoricoView'
-import ConfiguracoesView from './pages/ConfiguracoesView'
 import PerfilView from './pages/PerfilView'
 import UsuariosView from './pages/UsuariosView'
 import SubscriptionView from './pages/SubscriptionView'
@@ -26,7 +25,6 @@ export default function App() {
         <Route path="download-lote" element={<DownloadLoteView />} />
         <Route path="gerar-danfe" element={<GerarDanfeView />} />
         <Route path="historico" element={<HistoricoView />} />
-        <Route path="configuracoes" element={<ConfiguracoesView />} />
         <Route path="assinatura" element={<SubscriptionView />} />
         <Route path="usuarios" element={<UsuariosView />} />
         <Route path="perfil" element={<PerfilView />} />

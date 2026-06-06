@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { LayoutDashboard, Printer, History, FileCode2, Settings2, Menu, X, ShieldCheck, AlertCircle, FolderDown, LogOut, User, Users, CreditCard } from 'lucide-react'
-import type { Documento, Operacao, ConfigToml, Empresa, Subscription } from '../types'
+import { LayoutDashboard, Printer, History, FileCode2, Menu, X, ShieldCheck, AlertCircle, FolderDown, LogOut, User, Users, CreditCard } from 'lucide-react'
+import type { Documento, Operacao, Empresa, Subscription } from '../types'
 import * as api from '../api'
 import { formatCurrency } from '../utils'
 import { useAuth } from '../auth/AuthContext'
@@ -10,7 +10,6 @@ import { useAuth } from '../auth/AuthContext'
 export interface OutletContext {
   docs: Documento[]
   ops: Operacao[]
-  config: ConfigToml
   empresas: Empresa[]
   activeEmpresaId: string
   activeEmpresa: Empresa | undefined
@@ -23,26 +22,25 @@ export interface OutletContext {
   onEmpresaAtualizada: () => Promise<void>
   onAddOperation: (op: Operacao) => void
   onAddDocuments: (docs: Documento[]) => void
-  onSaveConfig: (config: ConfigToml) => Promise<void>
-  onResetDatabase: () => void
+  onLgpdChange: (ativo: boolean) => void
   onViewXml: (chave: string) => void
   onGenerateDanfe: (chave: string) => void
   triggerToast: (message: string, type: 'success' | 'error' | 'info') => void
 }
 
 export default function ProtectedLayout() {
-  const { logout, isAdmin } = useAuth()
+  const { logout, isAdmin, auth } = useAuth()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedChave, setSelectedChave] = useState<string>('')
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [state, setState] = useState<{
-    docs: Documento[]; ops: Operacao[]; config: ConfigToml; empresas: Empresa[]; activeEmpresaId: string
+    docs: Documento[]; ops: Operacao[]; empresas: Empresa[]; activeEmpresaId: string
   }>({
-    docs: [], ops: [], config: { prestador: { cnpj: '', razao_social: '' }, certificado: { caminho: '', senha_mascarada: '' }, geral: { ambiente: 'Homologacao', codigo_municipio: '' } },
-    empresas: [], activeEmpresaId: '',
+    docs: [], ops: [], empresas: [], activeEmpresaId: '',
   })
+  const [lgpdAtivo, setLgpdAtivo] = useState(false)
 
   const triggerToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ type, message })
@@ -51,10 +49,11 @@ export default function ProtectedLayout() {
 
   useEffect(() => {
     api.buscarSubscription().then(r => setSubscription(r.data)).catch(() => {})
+    api.fetchLgpdAtivo().then(setLgpdAtivo).catch(() => {})
     Promise.all([
-      api.fetchEmpresas(), api.fetchDocumentos(), api.fetchOperacoes(), api.fetchConfig(),
-    ].map(p => p.catch(() => []))).then(([empresas, docs, ops, config]) => {
-      setState(prev => ({ ...prev, empresas, docs, ops, config }))
+      api.fetchEmpresas(), api.fetchDocumentos(), api.fetchOperacoes(),
+    ].map(p => p.catch(() => []))).then(([empresas, docs, ops]) => {
+      setState(prev => ({ ...prev, empresas, docs, ops }))
     }).catch(() => {})
   }, [])
 
@@ -102,19 +101,8 @@ export default function ProtectedLayout() {
     }
   }
 
-  const handleSaveConfig = async (newConfig: ConfigToml) => {
-    setState(prev => ({ ...prev, config: newConfig }))
-    await api.saveConfigToml(newConfig)
-    triggerToast('Arquivo config.toml de credenciamento do Unimake salvo!', 'success')
-  }
-
-  const handleResetDatabase = () => {
-    setState({
-      docs: [], ops: [],
-      config: { prestador: { cnpj: '', razao_social: '' }, certificado: { caminho: '', senha_mascarada: '' }, geral: { ambiente: 'Homologacao', codigo_municipio: '' } },
-      empresas: [], activeEmpresaId: '',
-    })
-    triggerToast('Dados limpos! Notas e historico de consultas redefinidos.', 'info')
+  const handleLgpdChange = (ativo: boolean) => {
+    setLgpdAtivo(ativo)
   }
 
   const handleViewXmlPage = (chave: string) => {
@@ -138,14 +126,13 @@ export default function ProtectedLayout() {
     const routeMap: Record<string, string> = {
       dashboard: '/', documentos: '/documentos', empresas: '/empresas',
       download_lote: '/download-lote', gerar: '/gerar-danfe',
-      historico: '/historico', usuarios: '/usuarios', assinatura: '/assinatura', configuracoes: '/configuracoes', perfil: '/perfil',
+      historico: '/historico', usuarios: '/usuarios', assinatura: '/assinatura', perfil: '/perfil',
     }
     navigate(routeMap[tab] || '/')
     setMobileMenuOpen(false)
   }
 
   const activeEmpresa = state.empresas.find(e => e.id === state.activeEmpresaId) || state.empresas[0]
-  const lgpdAtivo = state.config.lgpd_ativo ?? false
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -156,7 +143,6 @@ export default function ProtectedLayout() {
     { id: 'historico', label: 'Historico NSU', path: '/historico', icon: History },
     ...(isAdmin ? [{ id: 'usuarios' as const, label: 'Usuários', path: '/usuarios' as const, icon: Users }] : []),
     { id: 'assinatura', label: 'Assinatura', path: '/assinatura', icon: CreditCard },
-    { id: 'configuracoes', label: 'Configuracao Toml', path: '/configuracoes', icon: Settings2 },
     { id: 'perfil', label: 'Perfil', path: '/perfil', icon: User },
   ]
 
@@ -169,8 +155,7 @@ export default function ProtectedLayout() {
     onEmpresaAtualizada: handleEmpresaAtualizada,
     onAddOperation: handleAddOperation,
     onAddDocuments: handleAddDocuments,
-    onSaveConfig: handleSaveConfig,
-    onResetDatabase: handleResetDatabase,
+    onLgpdChange: handleLgpdChange,
     onViewXml: handleViewXmlPage,
     onGenerateDanfe: handleGenerateDanfePage,
     selectedChave,
@@ -199,11 +184,19 @@ export default function ProtectedLayout() {
       <div className="flex flex-1 relative">
         {/* DESKTOP SIDEBAR */}
         <aside className="hidden lg:flex flex-col w-64 bg-slate-950 text-slate-300 border-r border-slate-900 p-5 shrink-0 select-none">
-          <div className="flex items-center gap-2.5 px-2 py-4 border-b border-slate-900">
-            <div className="w-8 h-8 rounded-md bg-indigo-600 flex items-center justify-center text-white font-extrabold shadow-md shadow-indigo-500/10">
-              <span className="text-white text-sm font-bold">NFSe</span>
+          {auth && (
+            <div className="flex items-center gap-2.5 px-2 py-3 border-b border-slate-900">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-indigo-500/20 shrink-0">
+                {auth.email.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-white truncate">{auth.email}</p>
+                <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded ${isAdmin ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-700/50 text-slate-400'}`}>
+                  {isAdmin ? 'Admin' : 'Operador'}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
           <nav className="mt-6 flex-1 space-y-1">
             {menuItems.map(item => {
               const Icon = item.icon
@@ -237,8 +230,15 @@ export default function ProtectedLayout() {
 
         {/* MOBILE HEADER */}
         <header className="lg:hidden w-full bg-slate-950 border-b border-slate-900 h-16 flex items-center justify-between px-4 text-white shrink-0 absolute top-0 left-0 z-40 select-none">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-md bg-indigo-600 flex items-center justify-center font-extrabold text-white text-sm">NFSe</div>
+          <div className="flex items-center gap-2 min-w-0">
+            {auth && (
+              <>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  {auth.email.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-xs font-bold text-white truncate">{auth.email}</span>
+              </>
+            )}
           </div>
           <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 cursor-pointer">
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

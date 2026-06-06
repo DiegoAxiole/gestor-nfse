@@ -89,6 +89,8 @@ export interface Subscription {
   gateway_subscription_id: string | null
   cancelado_em: string | null
   created_at: string
+  payment_link?: string
+  payment_method?: string
   updated_at: string
   diasRestantes: number
 }
@@ -101,18 +103,10 @@ export interface UsuarioPerfil {
   created_at: string
 }
 
-export interface ConfigToml {
-  prestador: {
-    cnpj: string;
-    razao_social: string;
-  };
-  certificado: {
-    caminho: string;
-    senha_mascarada: string;
-  };
-  geral: {
-    ambiente: "Homologacao" | "Producao";
-    codigo_municipio: string;
-  };
-  lgpd_ativo?: boolean;
+export interface ConfigOpcoes {
+  cnpj: string
+  razao_social: string
+  ambiente: string
+  codigo_municipio: string
+  lgpd_ativo: boolean
 }

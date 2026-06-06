@@ -7,7 +7,7 @@ import type {
   HealthCheck,
 } from './api-types'
 
-import type { Empresa, Operacao, ConfigToml, Documento as RichDocumento, TenantProfile, LoginResponse, CadastroResponse, CadastroData, UsuarioPerfil, Subscription } from './types'
+import type { Empresa, Operacao, ConfigOpcoes, Documento as RichDocumento, TenantProfile, LoginResponse, CadastroResponse, CadastroData, UsuarioPerfil, Subscription } from './types'
 import { parseNfseXml } from './services/xml-parser'
 
 export const BASE = '/api/v1'
@@ -238,31 +238,19 @@ export async function fetchOperacoes(): Promise<Operacao[]> {
   }))
 }
 
-export async function fetchConfig(): Promise<ConfigToml> {
+export async function fetchLgpdAtivo(): Promise<boolean> {
   const cfg = await requestJson<any>('/config')
-  return {
-    prestador: {
-      cnpj: cfg.cnpj ?? '',
-      razao_social: cfg.razao_social ?? '',
-    },
-    certificado: { caminho: cfg.certificado_caminho ?? '', senha_mascarada: cfg.certificado_senha_mascarada ?? '' },
-    geral: { ambiente: cfg.ambiente ?? 'Homologacao', codigo_municipio: cfg.codigo_municipio ?? '3550308' },
-    lgpd_ativo: cfg.lgpd_ativo ?? false,
-  }
+  return cfg.lgpd_ativo ?? false
 }
 
-export async function saveConfigToml(data: ConfigToml): Promise<void> {
-  await requestJson('/config', {
+export async function fetchConfigOpcoes(): Promise<ConfigOpcoes> {
+  return requestJson<any>('/config')
+}
+
+export async function salvarConfigOpcoes(data: Partial<ConfigOpcoes>): Promise<ConfigOpcoes> {
+  return requestJson('/config', {
     method: 'PUT',
-    body: JSON.stringify({
-      cnpj: data.prestador.cnpj,
-      razao_social: data.prestador.razao_social,
-      ambiente: data.geral.ambiente,
-      codigo_municipio: data.geral.codigo_municipio,
-      certificado_caminho: data.certificado.caminho || undefined,
-      certificado_senha: data.certificado.senha_mascarada === '****' ? undefined : data.certificado.senha_mascarada,
-      lgpd_ativo: data.lgpd_ativo ?? false,
-    }),
+    body: JSON.stringify(data),
   })
 }
 
@@ -425,7 +413,7 @@ export async function alterarPapelUsuario(usuarioId: number, papel: string): Pro
 }
 
 export async function removerUsuario(usuarioId: number): Promise<void> {
-  await requestJson<void>(`/usuarios/${usuarioId}`, { method: 'DELETE' })
+  await requestJson<{ ok: boolean }>(`/usuarios/${usuarioId}`, { method: 'DELETE' })
 }
 
 export async function buscarSubscription(): Promise<{ data: Subscription }> {
@@ -436,10 +424,14 @@ export async function cancelarSubscription(): Promise<{ data: Subscription }> {
   return requestJson<{ data: Subscription }>('/subscription/cancelar', { method: 'POST' })
 }
 
-export async function upgradeSubscription(plano: string, periodo_fim: string): Promise<{ data: Subscription }> {
+export async function upgradeSubscription(data: {
+  plano: string
+  periodo: string
+  payment_method: 'PIX' | 'BOLETO' | 'CREDIT_CARD'
+}): Promise<{ data: Subscription }> {
   return requestJson<{ data: Subscription }>('/subscription/upgrade', {
     method: 'POST',
-    body: JSON.stringify({ plano, periodo_fim }),
+    body: JSON.stringify(data),
   })
 }
 

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from './AuthContext'
 import { Link } from 'react-router-dom'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff } from 'lucide-react'
 
 export default function CadastroPage() {
   const { cadastrar } = useAuth()
@@ -11,6 +11,7 @@ export default function CadastroPage() {
   const [nomeFantasia, setNomeFantasia] = useState('')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
+  const [showSenha, setShowSenha] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -91,7 +92,15 @@ export default function CadastroPage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Senha</label>
-            <input type="password" value={senha} onChange={e => setSenha(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="••••••••" required />
+            <div className="relative">
+              <input type={showSenha ? 'text' : 'password'} value={senha} onChange={e => setSenha(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg pr-10 px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                placeholder="••••••••" required />
+              <button type="button" onClick={() => setShowSenha(!showSenha)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer">
+                {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold py-2.5 rounded-lg transition-all cursor-pointer">

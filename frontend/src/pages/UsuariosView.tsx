@@ -2,7 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react'
 import { listarUsuarios, criarUsuario, alterarPapelUsuario, removerUsuario } from '../api'
 import type { UsuarioPerfil } from '../types'
 import { useAuth } from '../auth/AuthContext'
-import { AlertCircle, CheckCircle, UserPlus, Trash2, Shield } from 'lucide-react'
+import { AlertCircle, CheckCircle, UserPlus, Trash2, Shield, Eye, EyeOff } from 'lucide-react'
 
 export default function UsuariosView() {
   const { auth } = useAuth()
@@ -15,6 +15,7 @@ export default function UsuariosView() {
   const [nome, setNome] = useState('')
   const [papel, setPapel] = useState<'admin' | 'operador'>('operador')
   const [senha, setSenha] = useState('')
+  const [showSenha, setShowSenha] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const carregar = () => {
@@ -33,12 +34,12 @@ export default function UsuariosView() {
     setError('')
     setSuccess('')
     try {
-      await criarUsuario({ email, nome: nome || undefined, papel, senha })
+      const res = await criarUsuario({ email, nome: nome || undefined, papel, senha })
+      setUsuarios(prev => [...prev, res.data])
       setEmail(''); setNome(''); setPapel('operador'); setSenha('')
       setShowForm(false)
       setSuccess('Usuário criado com sucesso!')
       setTimeout(() => setSuccess(''), 3000)
-      carregar()
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -48,10 +49,10 @@ export default function UsuariosView() {
 
   const handleAlterarPapel = async (id: number, novoPapel: string) => {
     try {
-      await alterarPapelUsuario(id, novoPapel)
+      const res = await alterarPapelUsuario(id, novoPapel)
+      setUsuarios(prev => prev.map(u => u.id === id ? res.data : u))
       setSuccess('Papel atualizado!')
       setTimeout(() => setSuccess(''), 3000)
-      carregar()
     } catch (err: any) {
       setError(err.message)
     }
@@ -65,9 +66,9 @@ export default function UsuariosView() {
     if (!confirm('Remover este usuário?')) return
     try {
       await removerUsuario(id)
+      setUsuarios(prev => prev.filter(u => u.id !== id))
       setSuccess('Usuário removido!')
       setTimeout(() => setSuccess(''), 3000)
-      carregar()
     } catch (err: any) {
       setError(err.message)
     }
@@ -128,7 +129,14 @@ export default function UsuariosView() {
             </div>
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Senha *</label>
-              <input type="password" value={senha} onChange={e => setSenha(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" required minLength={6} />
+              <div className="relative">
+                <input type={showSenha ? 'text' : 'password'} value={senha} onChange={e => setSenha(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg pr-10 px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" required minLength={6} />
+                <button type="button" onClick={() => setShowSenha(!showSenha)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer">
+                  {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
 

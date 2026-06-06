@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import type { OutletContext } from "./ProtectedLayout";
-import { Documento, Operacao, Empresa, ConfigToml } from "../types";
+import { Documento, Operacao, Empresa } from "../types";
 import { formatCurrency, formatDate, calculateRemainingDays, formatCnpj, generateUUID, maskRazao, maskNome } from "../utils";
 import * as api from "../api";
 import {
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 export default function DashboardView() {
-  const { docs, ops, empresas = [], config, activeEmpresa, lgpdAtivo = false, onNavigate, onSetActiveEmpresa, onAddOperation, onAddDocuments } = useOutletContext<OutletContext>();
+  const { docs, ops, empresas = [], activeEmpresa, lgpdAtivo = false, onNavigate, onSetActiveEmpresa, onAddOperation, onAddDocuments } = useOutletContext<OutletContext>();
   // Aggregate multi-company stats
   const totalCompaniesCount = empresas.length;
   
@@ -314,10 +314,10 @@ export default function DashboardView() {
             Escritório de Contabilidade Gestor • Licenciado
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white uppercase sm:text-3xl">
-            {lgpdAtivo ? maskRazao(config?.prestador?.razao_social || "") : (config?.prestador?.razao_social || "NÃO CONFIGURADO")}
+            {lgpdAtivo ? maskRazao(activeEmpresa?.razao_social || "") : (activeEmpresa?.razao_social || "NÃO CONFIGURADO")}
           </h1>
           <p className="text-slate-400 text-xs md:text-sm max-w-2xl leading-relaxed">
-            CNPJ do Administrador: <span className="font-mono font-bold text-indigo-300">{config?.prestador?.cnpj ? formatCnpj(config.prestador.cnpj, lgpdAtivo) : "NÃO CONFIGURADO"}</span> • 
+            CNPJ: <span className="font-mono font-bold text-indigo-300">{activeEmpresa?.cnpj ? formatCnpj(activeEmpresa.cnpj, lgpdAtivo) : "NÃO CONFIGURADO"}</span> • 
             Este painel permite à sua assessoria gerenciar de forma centralizada a captação e download de notas (XMLs) de todos os seus clientes em lote, impulsionando a velocidade e eliminando downloads individuais.
           </p>
         </div>

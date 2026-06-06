@@ -19,7 +19,9 @@ import {
   Settings,
   AlertTriangle,
   UploadCloud,
-  Loader2
+  Loader2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -33,6 +35,7 @@ export default function EmpresasView() {
   const [cnpj, setCnpj] = useState("");
   const [certificadoPath, setCertificadoPath] = useState("");
   const [senha, setSenha] = useState("");
+  const [showSenha, setShowSenha] = useState(false);
   const [validadeFim, setValidadeFim] = useState("");
   const [ambiente, setAmbiente] = useState<"Homologacao" | "Producao">("Homologacao");
   const [municipio, setMunicipio] = useState("3550308");
@@ -363,13 +366,19 @@ export default function EmpresasView() {
                   {/* Password is essential first */}
                   <div className="bg-slate-900/60 p-2 rounded-md border border-slate-850/50 space-y-1.5">
                     <span className="text-[8.5px] text-slate-500 font-bold block uppercase tracking-wider">PASSO 1: Senha do Certificado</span>
-                    <input
-                      type="password"
-                      value={senha}
-                      onChange={(e) => setSenha(e.target.value)}
-                      placeholder="Senha do arquivo .pfx"
-                      className="w-full p-2 bg-slate-950 border border-slate-850 rounded-md font-mono text-slate-300 focus:outline-hidden text-[10.5px]"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showSenha ? 'text' : 'password'}
+                        value={senha}
+                        onChange={(e) => setSenha(e.target.value)}
+                        placeholder="Senha do arquivo .pfx"
+                        className="w-full p-2 bg-slate-950 border border-slate-850 rounded-md font-mono text-slate-300 focus:outline-hidden text-[10.5px] pr-10"
+                      />
+                      <button type="button" onClick={() => setShowSenha(!showSenha)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer">
+                        {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* File selector */}
