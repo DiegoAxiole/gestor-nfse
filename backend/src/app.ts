@@ -19,6 +19,8 @@ import { criarRouterTenant } from './modules/auth/tenant.routes.js'
 import { criarRouterUsuarios } from './modules/usuarios/usuario.routes.js'
 import { criarRouterSubscription } from './modules/subscription/subscription.routes.js'
 import { subscriptionMiddleware } from './modules/subscription/subscription.middleware.js'
+import { criarRouterBilling } from './modules/billing/billing.routes.js'
+import { criarRouterPlanLimits } from './modules/plan-limits/plan-limits.routes.js'
 import { errorHandler } from './shared/error-handler.js'
 import { authMiddleware } from './shared/auth.middleware.js'
 
@@ -95,24 +97,30 @@ export async function createApp() {
     res.json({ status: 'ok', version: '0.5.0' })
   })
 
-  router.use((req, res, next) => {
-    const publicPaths = ['/health', '/api/v1/auth']
-    if (publicPaths.some(p => req.path.startsWith(p))) { next(); return }
+  // API sub-router — todas as rotas /api/v1/* passam por auth + subscription
+  const apiRouter = express.Router()
+  apiRouter.use((req, res, next) => {
+    if (req.path.startsWith('/auth')) { next(); return }
     authMiddleware(req, res, next)
   })
-  router.use(subscriptionMiddleware)
+  apiRouter.use(subscriptionMiddleware)
 
-  router.use('/api/v1/auth', criarRouterAuth())
-  router.use('/api/v1/subscription', criarRouterSubscription())
-  router.use('/api/v1/prestadores', criarRouterPrestadores(config.codigo_municipio))
-  router.use('/api/v1/config', criarRouterConfig())
-  router.use('/api/v1/distribuicao', criarRouterDistribuicao(config.codigo_municipio))
-  router.use('/api/v1/documentos', criarRouterDocumentos())
-  router.use('/api/v1/operacoes', criarRouterOperacoes())
-  router.use('/api/v1/tenant', criarRouterTenant())
-  router.use('/api/v1/usuarios', criarRouterUsuarios())
-  router.use('/api/v1/tasks', criarRouterTasks())
+  apiRouter.use('/auth', criarRouterAuth())
+  apiRouter.use('/subscription', criarRouterSubscription())
+  apiRouter.use('/prestadores', criarRouterPrestadores(config.codigo_municipio))
+  apiRouter.use('/config', criarRouterConfig())
+  apiRouter.use('/distribuicao', criarRouterDistribuicao(config.codigo_municipio))
+  apiRouter.use('/documentos', criarRouterDocumentos())
+  apiRouter.use('/operacoes', criarRouterOperacoes())
+  apiRouter.use('/tenant', criarRouterTenant())
+  apiRouter.use('/usuarios', criarRouterUsuarios())
+  apiRouter.use('/tasks', criarRouterTasks())
+  apiRouter.use('/admin', criarRouterPlanLimits())
 
+  // Webhooks — no auth (Asaas calls with webhook secret validation)
+  router.use('/api/v1/webhooks', criarRouterBilling())
+
+  router.use('/api/v1', apiRouter)
   app.use(router)
 
   app.use(errorHandler)
