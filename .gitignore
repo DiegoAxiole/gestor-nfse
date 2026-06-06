@@ -36,3 +36,6 @@ frontend/.env.example
 
 # Builds de release
 releases/
+
+# Docs gerados por IA (nunca commitar)
+docs/

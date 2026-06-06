@@ -23,6 +23,6 @@ certificado/
 
 # Logs
 *.log
+data/distribuicao.log
 
 /src/generated/prisma
-src/db/migrations/

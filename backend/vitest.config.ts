@@ -1,5 +1,10 @@
 import { defineConfig } from 'vitest/config'
 
+import { config } from 'dotenv'
+
+// Carrega .env antes dos testes
+config({ path: '.env' })
+
 export default defineConfig({
   test: {
     globals: true,
