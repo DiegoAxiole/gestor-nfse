@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { authMiddleware, adminMiddleware } from '../../shared/auth.middleware.js'
 import { usuarioService } from './usuario.service.js'
 import { NotFoundError, ConflictError } from '../../shared/errors.js'
+import { planLimitMiddleware } from '../plan-limits/plan-limits.middleware.js'
 
 const schemaCriar = z.object({
   email: z.string().email(),
@@ -30,7 +31,7 @@ export function criarRouterUsuarios(): Router {
     }
   })
 
-  router.post('/', async (req: Request, res: Response) => {
+  router.post('/', planLimitMiddleware('usuarios_max'), async (req: Request, res: Response) => {
     try {
       const body = schemaCriar.parse(req.body)
       const usuario = await usuarioService.criar(req.tenantId!, body)
@@ -57,7 +58,7 @@ export function criarRouterUsuarios(): Router {
   router.delete('/:id', async (req: Request, res: Response) => {
     try {
       await usuarioService.remover(req.tenantId!, Number(req.params.id))
-      res.status(204).send()
+      res.status(200).json({ ok: true })
     } catch (err) {
       if (err instanceof NotFoundError) { res.status(404).json({ error: err.message }); return }
       res.status(500).json({ error: 'Erro interno' })

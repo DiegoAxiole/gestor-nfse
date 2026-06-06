@@ -2,6 +2,7 @@ import { Router } from 'express'
 import archiver from 'archiver'
 import type { Request, Response, NextFunction } from 'express'
 import { documentoRepository } from './documentos.repository.js'
+import { planLimitMiddleware } from '../plan-limits/plan-limits.middleware.js'
 
 export function criarRouterDocumentos(): Router {
   const router = Router()
@@ -42,7 +43,7 @@ export function criarRouterDocumentos(): Router {
     } catch (err) { next(err) }
   })
 
-  router.get('/download-zip', async (req: Request, res: Response, next: NextFunction) => {
+  router.get('/download-zip', planLimitMiddleware('lote_zip'), async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { cnpj, inicio, fim } = req.query
       if (!cnpj || !inicio || !fim) {
