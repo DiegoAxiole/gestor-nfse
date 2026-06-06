@@ -6,8 +6,9 @@ import { subscriptionService } from './subscription.service.js'
 import { NotFoundError } from '../../shared/errors.js'
 
 const schemaUpgrade = z.object({
-  plano: z.string().min(1),
-  periodo_fim: z.string().refine(s => !isNaN(Date.parse(s)), { message: 'Data inválida' }),
+  plano: z.enum(['basico', 'profissional']),
+  periodo: z.enum(['mensal', 'trimestral', 'anual']),
+  payment_method: z.enum(['PIX', 'BOLETO', 'CREDIT_CARD']),
 })
 
 export function criarRouterSubscription(): Router {
@@ -39,7 +40,8 @@ export function criarRouterSubscription(): Router {
       const body = schemaUpgrade.parse(req.body)
       const sub = await subscriptionService.upgrade(req.tenantId!, {
         plano: body.plano,
-        periodo_fim: new Date(body.periodo_fim),
+        periodo: body.periodo,
+        payment_method: body.payment_method,
       })
       res.json({ data: sub })
     } catch (err) {

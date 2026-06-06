@@ -3,7 +3,7 @@ import { db } from '../../db/db.js'
 import { subscriptions } from '../../db/schema.js'
 import { eq } from 'drizzle-orm'
 
-const rotasLivres = ['/health', '/api/v1/auth', '/api/v1/subscription']
+const rotasLivres = ['/auth', '/subscription']
 
 export async function subscriptionMiddleware(req: Request, res: Response, next: NextFunction) {
   const rota = req.path

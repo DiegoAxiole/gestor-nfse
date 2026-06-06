@@ -1,7 +1,8 @@
 import { db } from '../../db/db.js'
-import { subscriptions } from '../../db/schema.js'
+import { subscriptions, tenants } from '../../db/schema.js'
 import { eq } from 'drizzle-orm'
 import { NotFoundError } from '../../shared/errors.js'
+import { billingService } from '../billing/billing.service.js'
 
 export type SubscriptionData = {
   id: number
@@ -31,6 +32,13 @@ export const subscriptionService = {
   },
 
   async cancelar(tenantId: number) {
+    const [sub] = await db.select({ asaas_subscription_id: subscriptions.asaas_subscription_id })
+      .from(subscriptions).where(eq(subscriptions.tenant_id, tenantId)).limit(1)
+
+    if (sub?.asaas_subscription_id) {
+      await billingService.cancelarAssinatura(sub.asaas_subscription_id).catch(() => {})
+    }
+
     const rows = await db.update(subscriptions)
       .set({ status: 'canceled', cancelado_em: new Date(), updated_at: new Date() })
       .where(eq(subscriptions.tenant_id, tenantId))
@@ -39,16 +47,46 @@ export const subscriptionService = {
     return { ...rows[0], diasRestantes: 0 }
   },
 
-  async upgrade(tenantId: number, data: { plano: string; periodo_fim: Date }) {
+  async upgrade(tenantId: number, data: { plano: string; periodo: string; payment_method: 'PIX' | 'BOLETO' | 'CREDIT_CARD' }) {
+    const tenant = await db.select({ nome: tenants.nome, documento: tenants.documento, email_contato: tenants.email_contato })
+      .from(tenants).where(eq(tenants.id, tenantId)).limit(1).then(r => r[0])
+    if (!tenant) throw new NotFoundError('Tenant', String(tenantId))
+
+    const [sub] = await db.select({ asaas_customer_id: subscriptions.asaas_customer_id })
+      .from(subscriptions).where(eq(subscriptions.tenant_id, tenantId)).limit(1)
+
+    let customerId = sub?.asaas_customer_id
+    if (!customerId) {
+      customerId = await billingService.criarCliente({
+        nome: tenant.nome,
+        documento: tenant.documento,
+        email: tenant.email_contato,
+      })
+    }
+
+    const result = await billingService.criarAssinatura({
+      customerId,
+      plano: data.plano,
+      periodo: data.periodo,
+      paymentMethod: data.payment_method,
+    })
+
+    const periodoFim = new Date()
+    periodoFim.setDate(periodoFim.getDate() + 30)
+
     const rows = await db.update(subscriptions)
-      .set({ plano: data.plano, status: 'active', periodo_fim: data.periodo_fim, updated_at: new Date() })
+      .set({
+        plano: data.plano,
+        status: 'pending',
+        periodo_fim: periodoFim,
+        asaas_customer_id: customerId,
+        asaas_subscription_id: result.subscriptionId,
+        updated_at: new Date(),
+      })
       .where(eq(subscriptions.tenant_id, tenantId))
       .returning()
+
     if (!rows[0]) throw new NotFoundError('Subscription', String(tenantId))
-    const s = rows[0]
-    const now = new Date()
-    const diffMs = s.periodo_fim.getTime() - now.getTime()
-    const diasRestantes = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
-    return { ...s, diasRestantes }
+    return { ...rows[0], payment_link: result.paymentLink, payment_method: data.payment_method, diasRestantes: 0 }
   },
 }
